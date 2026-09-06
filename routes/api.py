@@ -11,7 +11,6 @@ import config
 
 api_bp = Blueprint("api", __name__)
 
-# Reference to background monitoring service instance (bound in app.py)
 monitoring_service_instance = None
 
 def init_api_service(service):
@@ -63,7 +62,8 @@ def get_network_metrics():
         "bandwidth_utilization_pct": snapshot.get("bandwidth_utilization"),
         "signal_strength_pct": snapshot.get("signal_strength"),
         "wifi_status": snapshot.get("wifi_status"),
-        "ssid": snapshot.get("ssid")
+        "ssid": snapshot.get("ssid"),
+        "internet_status": snapshot.get("internet_status", "ONLINE")
     })
 
 @api_bp.route("/api/system-health", methods=["GET"])
@@ -95,14 +95,14 @@ def get_tower_metrics():
         "status": "success",
         "power_consumption_w": snapshot.get("power_consumption"),
         "battery_voltage_v": snapshot.get("battery_voltage"),
-        "connected_users": snapshot.get("connected_users"),
+        "connected_client_count": snapshot.get("connected_client_count"),
         "tower_load_pct": snapshot.get("tower_load"),
         "data_source": "SIMULATED PROTOTYPE DATA"
     })
 
 @api_bp.route("/api/hotspot", methods=["GET"])
 def get_hotspot_metrics():
-    """Retrieve Mobile Hotspot status and shared interface data usage."""
+    """Retrieve Mobile Hotspot status, connected client devices count, and client IP addresses."""
     snapshot = db.get_latest_snapshot()
     if not snapshot:
         return jsonify({"status": "no_data"}), 200
@@ -111,7 +111,8 @@ def get_hotspot_metrics():
         "status": "success",
         "hotspot_status": snapshot.get("hotspot_status"),
         "interface_name": snapshot.get("hotspot_interface"),
-        "client_count": snapshot.get("hotspot_client_count"),
+        "connected_client_count": snapshot.get("connected_client_count"),
+        "client_ip_list": snapshot.get("client_ip_list", []),
         "client_details_status": snapshot.get("hotspot_client_details_status")
     })
 
@@ -143,17 +144,19 @@ def get_alerts():
 
 @api_bp.route("/api/status", methods=["GET"])
 def get_system_status():
-    """Retrieve overall architecture status, data sources, and completion breakdown."""
+    """Retrieve overall architecture status, internet status, and completion metadata."""
     snapshot = db.get_latest_snapshot()
     overall = snapshot.get("overall_status") if snapshot else "NORMAL"
+    internet = snapshot.get("internet_status") if snapshot else "ONLINE"
+    hotspot = snapshot.get("hotspot_status") if snapshot else "INACTIVE"
     return jsonify({
         "status": "success",
         "overall_status": overall,
+        "internet_status": internet,
+        "local_monitoring_status": "ACTIVE",
+        "hotspot_status": hotspot,
         "project_title": config.SYSTEM_METADATA["title"],
-        "completion_status": config.SYSTEM_METADATA["completion"],
-        "realtime_parameters": config.SYSTEM_METADATA["realtime_parameters"],
-        "simulated_parameters": config.SYSTEM_METADATA["simulated_parameters"],
-        "future_hardware": config.SYSTEM_METADATA["future_hardware"]
+        "completion_status": config.SYSTEM_METADATA["completion"]
     })
 
 @api_bp.route("/api/demo-mode", methods=["POST"])
@@ -191,21 +194,4 @@ def reset_demo_mode():
     return jsonify({
         "status": "success",
         "message": "Returned to LIVE monitoring mode."
-    })
-
-@api_bp.route("/api/config/bandwidth", methods=["POST"])
-def update_bandwidth():
-    """Update maximum bandwidth threshold in Mbps."""
-    req = request.get_json(silent=True) or {}
-    mbps = req.get("max_bandwidth_mbps")
-    if not mbps or float(mbps) <= 0:
-        return jsonify({"status": "error", "message": "Provide positive max_bandwidth_mbps"}), 400
-
-    if monitoring_service_instance:
-        monitoring_service_instance.set_max_bandwidth(float(mbps))
-
-    return jsonify({
-        "status": "success",
-        "max_bandwidth_mbps": float(mbps),
-        "message": f"Maximum bandwidth updated to {mbps} Mbps"
     })

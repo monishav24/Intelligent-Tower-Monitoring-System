@@ -1,12 +1,11 @@
 """
 Simulated Telecom Tower Sensor Collector.
-Generates realistic, non-random simulated parameters (Power, Battery Voltage, Users, Tower Load).
-Enforces intelligent relationships (Users -> Traffic -> Load -> Power Draw) and Demo Mode scenarios.
-All output explicitly tagged as 'SIMULATED PROTOTYPE DATA'.
+Generates realistic simulated hardware parameters (Power, Battery Voltage, Tower Load).
+CONNECTED HOTSPOT DEVICES are supplied directly from live Windows ARP detection (ZERO fake/random values!).
+All simulated outputs are explicitly tagged as 'SIMULATED PROTOTYPE DATA'.
 """
 import random
 import time
-import math
 import os
 import sys
 
@@ -17,9 +16,10 @@ class SimulatedTowerCollector:
         self.battery_voltage = 12.60
         self.base_time = time.time()
 
-    def get_metrics(self, net_metrics, demo_scenario="NORMAL"):
+    def get_metrics(self, net_metrics, real_hotspot_client_count=0, demo_scenario="NORMAL"):
         """
-        Calculate realistic simulated hardware metrics tied to laptop network throughput and active demo mode.
+        Calculate realistic simulated hardware metrics tied to real laptop throughput,
+        real connected hotspot device count, and active demo scenario.
         """
         throughput = net_metrics.get("throughput_mbps", 1.0)
         bw_util = net_metrics.get("bandwidth_utilization", 5.0)
@@ -27,45 +27,41 @@ class SimulatedTowerCollector:
         scenario = demo_scenario.upper()
 
         if scenario == "HIGH_TRAFFIC":
-            users = random.randint(180, 240)
+            effective_clients = max(real_hotspot_client_count, 15)
             tower_load = round(min(78.0 + (throughput * 2.0) + random.uniform(-2, 3), 90.0), 1)
             power = round(175.0 + (tower_load * 0.5) + random.uniform(-2, 3), 1)
             battery = round(12.1 + random.uniform(-0.05, 0.05), 2)
 
         elif scenario == "NETWORK_CONGESTION":
-            users = random.randint(320, 450)
+            effective_clients = max(real_hotspot_client_count, 35)
             tower_load = round(random.uniform(93.0, 98.5), 1)
             power = round(215.0 + random.uniform(-3, 4), 1)
             battery = round(11.7 + random.uniform(-0.05, 0.05), 2)
 
         elif scenario == "WEAK_SIGNAL":
-            users = random.randint(20, 40)
+            effective_clients = real_hotspot_client_count
             tower_load = round(random.uniform(25.0, 40.0), 1)
             power = round(115.0 + random.uniform(-2, 2), 1)
             battery = round(12.45 + random.uniform(-0.02, 0.02), 2)
 
         elif scenario == "POWER_ANOMALY":
-            users = random.randint(35, 60)
+            effective_clients = real_hotspot_client_count
             tower_load = round(random.uniform(35.0, 50.0), 1)
             power = round(245.0 + random.uniform(-5, 6), 1)      # High power surge (>220W Critical)
             battery = round(10.3 + random.uniform(-0.05, 0.05), 2) # Low battery voltage (<10.8V Critical)
 
         elif scenario == "NETWORK_DISCONNECTED":
-            users = 0
+            effective_clients = real_hotspot_client_count
             tower_load = 0.0
             power = round(45.0 + random.uniform(-1, 1), 1)
             battery = round(12.5 + random.uniform(-0.02, 0.02), 2)
 
         else: # NORMAL Operation
-            elapsed = time.time() - self.base_time
-            diurnal_wave = math.sin(elapsed / 300.0) * 8.0
+            effective_clients = real_hotspot_client_count
 
-            # Users scale with throughput
-            users = int(max(35 + diurnal_wave + (throughput * 10.0) + random.randint(-2, 2), 10))
-
-            # Tower load scales with users & bandwidth utilization
-            raw_load = 20.0 + (users * 0.35) + (bw_util * 0.4)
-            tower_load = round(min(max(raw_load + random.uniform(-1.5, 1.5), 10.0), 85.0), 1)
+            # Tower load scales with real connected hotspot devices and bandwidth utilization
+            raw_load = 15.0 + (effective_clients * 8.0) + (bw_util * 0.5) + (throughput * 4.0)
+            tower_load = round(min(max(raw_load + random.uniform(-1.0, 1.0), 10.0), 95.0), 1)
 
             # Power consumption scales directly with tower load (Base 100W + load * 0.75)
             power = round(100.0 + (tower_load * 0.75) + random.uniform(-1.5, 1.5), 1)
@@ -76,7 +72,7 @@ class SimulatedTowerCollector:
             battery = round(self.battery_voltage, 2)
 
         return {
-            "connected_users": users,
+            "connected_hotspot_devices": effective_clients,
             "tower_load": tower_load,
             "power_consumption": power,
             "battery_voltage": battery,

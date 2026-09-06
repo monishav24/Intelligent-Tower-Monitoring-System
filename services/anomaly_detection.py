@@ -1,7 +1,8 @@
 """
 Anomaly Detection & Intelligent Status Evaluation Engine.
-Evaluates multi-parameter thresholds, statistical traffic spikes, and network disconnect/reconnect events.
-Enforces intelligent overall status priority: DISCONNECTED > CRITICAL > WARNING > NORMAL.
+Evaluates multi-parameter thresholds, statistical traffic spikes, Wi-Fi interface state,
+and Internet connectivity disconnection/restoration events.
+Enforces overall status priority: DISCONNECTED > CRITICAL > WARNING > NORMAL.
 """
 import os
 import sys
@@ -14,7 +15,8 @@ class AnomalyDetector:
     def __init__(self):
         self.recent_throughputs = []
         self.max_history = 10
-        self.was_disconnected = False
+        self.was_wifi_disconnected = False
+        self.was_internet_offline = False
 
     def evaluate(self, reading):
         """
@@ -22,12 +24,13 @@ class AnomalyDetector:
         Returns overall_status, anomaly_status, and active_alerts list.
         """
         alerts = []
-        status_ranks = [] # DISCONNECTED, CRITICAL, WARNING, NORMAL
+        status_ranks = []
 
         ts = reading.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         th = config.THRESHOLDS
 
         wifi_status = reading.get("wifi_status", "CONNECTED").upper()
+        internet_status = reading.get("internet_status", "ONLINE").upper()
         signal = reading.get("signal_strength", 80.0)
         bw_util = reading.get("bandwidth_utilization", 10.0)
         temp = reading.get("system_temperature")
@@ -35,30 +38,53 @@ class AnomalyDetector:
         power_w = reading.get("power_consumption", 120.0)
         throughput = reading.get("throughput_mbps", 0.0)
 
-        # 1. DISCONNECTION & AUTO-RECOVERY CHECK
-        if wifi_status == "DISCONNECTED" or signal == 0.0:
-            status_ranks.append("DISCONNECTED")
-            if not self.was_disconnected:
+        # 1. INTERNET DISCONNECTION & AUTO-RECOVERY CHECK
+        if internet_status == "OFFLINE":
+            status_ranks.append("WARNING")
+            if not self.was_internet_offline:
                 alerts.append({
                     "timestamp": ts,
                     "severity": "CRITICAL",
-                    "parameter": "Network Connection",
-                    "message": "CRITICAL: Network Connection Lost",
+                    "parameter": "Internet Connectivity",
+                    "message": "CRITICAL: Internet Connection Disconnected (Operating 100% Offline Locally)",
                     "status": "ACTIVE"
                 })
-                self.was_disconnected = True
+                self.was_internet_offline = True
         else:
-            if self.was_disconnected:
+            if self.was_internet_offline:
                 alerts.append({
                     "timestamp": ts,
                     "severity": "INFO",
-                    "parameter": "Network Connection",
-                    "message": "INFO: Network Connection Restored",
+                    "parameter": "Internet Connectivity",
+                    "message": "INFO: Internet Connection Restored",
                     "status": "ACTIVE"
                 })
-                self.was_disconnected = False
+                self.was_internet_offline = False
 
-        # 2. BANDWIDTH UTILIZATION CHECK
+        # 2. WI-FI DISCONNECTION CHECK
+        if wifi_status == "DISCONNECTED" or signal == 0.0:
+            status_ranks.append("DISCONNECTED")
+            if not self.was_wifi_disconnected:
+                alerts.append({
+                    "timestamp": ts,
+                    "severity": "CRITICAL",
+                    "parameter": "Local Network",
+                    "message": "CRITICAL: Local Network Connection Lost",
+                    "status": "ACTIVE"
+                })
+                self.was_wifi_disconnected = True
+        else:
+            if self.was_wifi_disconnected:
+                alerts.append({
+                    "timestamp": ts,
+                    "severity": "INFO",
+                    "parameter": "Local Network",
+                    "message": "INFO: Local Network Connection Restored",
+                    "status": "ACTIVE"
+                })
+                self.was_wifi_disconnected = False
+
+        # 3. BANDWIDTH UTILIZATION CHECK
         if bw_util >= th["bandwidth_utilization"]["critical"]:
             alerts.append({
                 "timestamp": ts,
@@ -78,7 +104,7 @@ class AnomalyDetector:
             })
             status_ranks.append("WARNING")
 
-        # 3. SIGNAL STRENGTH CHECK (If connected)
+        # 4. SIGNAL STRENGTH CHECK
         if wifi_status != "DISCONNECTED" and signal > 0:
             if signal <= th["signal_strength"]["critical"]:
                 alerts.append({
@@ -99,7 +125,7 @@ class AnomalyDetector:
                 })
                 status_ranks.append("WARNING")
 
-        # 4. TEMPERATURE CHECK (If available)
+        # 5. TEMPERATURE CHECK (If available)
         if temp is not None:
             if temp >= th["temperature"]["critical"]:
                 alerts.append({
@@ -120,7 +146,7 @@ class AnomalyDetector:
                 })
                 status_ranks.append("WARNING")
 
-        # 5. SIMULATED BATTERY VOLTAGE CHECK
+        # 6. SIMULATED BATTERY VOLTAGE CHECK
         if battery_v <= th["battery_voltage"]["critical"]:
             alerts.append({
                 "timestamp": ts,
@@ -140,7 +166,7 @@ class AnomalyDetector:
             })
             status_ranks.append("WARNING")
 
-        # 6. SIMULATED POWER CONSUMPTION CHECK
+        # 7. SIMULATED POWER CONSUMPTION CHECK
         if power_w >= th["power_consumption"]["critical"]:
             alerts.append({
                 "timestamp": ts,
@@ -160,7 +186,7 @@ class AnomalyDetector:
             })
             status_ranks.append("WARNING")
 
-        # 7. TRAFFIC SPIKE ANOMALY CHECK
+        # 8. TRAFFIC SPIKE ANOMALY CHECK
         if len(self.recent_throughputs) >= 5:
             avg_throughput = sum(self.recent_throughputs) / len(self.recent_throughputs)
             spike_threshold = avg_throughput * th["traffic_spike_multiplier"]
@@ -178,7 +204,7 @@ class AnomalyDetector:
         if len(self.recent_throughputs) > self.max_history:
             self.recent_throughputs.pop(0)
 
-        # Enforce Overall Status Priority: DISCONNECTED > CRITICAL > WARNING > NORMAL
+        # Enforce Priority: DISCONNECTED > CRITICAL > WARNING > NORMAL
         if "DISCONNECTED" in status_ranks:
             overall_status = "DISCONNECTED"
         elif "CRITICAL" in status_ranks:

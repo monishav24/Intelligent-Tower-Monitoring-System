@@ -18,20 +18,36 @@
                 <div class="brand-logo">📡</div>
                 <div>
                     <h1>INTELLIGENT TELECOM TOWER MONITORING SYSTEM</h1>
-                    <p class="brand-sub">Real-Time Telemetry, AI Traffic Prediction, Anomaly Engine & Offline Monitoring</p>
+                    <p class="brand-sub">Real-Time Telemetry, Live Hotspot Client Detection, AI Forecast & Offline Engine</p>
                 </div>
             </div>
 
             <div class="header-actions">
-                <div class="status-pill" id="global-status-pill">
-                    <span class="status-pulse"></span>
-                    <span id="global-status-text">SYSTEM NORMAL</span>
-                </div>
                 <div class="clock-display">
                     <span id="live-clock">--:--:--</span>
                 </div>
             </div>
         </header>
+
+        <!-- TRI-STATUS CONNECTIVITY BAR -->
+        <section class="tri-status-bar glass-panel">
+            <div class="status-item">
+                <span class="status-title">Internet Connectivity:</span>
+                <span class="status-badge online" id="status-internet">ONLINE</span>
+            </div>
+            <div class="status-item">
+                <span class="status-title">Local Monitoring:</span>
+                <span class="status-badge active" id="status-local">ACTIVE</span>
+            </div>
+            <div class="status-item">
+                <span class="status-title">Hotspot Status:</span>
+                <span class="status-badge active" id="status-hotspot">ACTIVE</span>
+            </div>
+            <div class="status-item overall">
+                <span class="status-title">Overall System Status:</span>
+                <span class="status-badge normal" id="status-overall">NORMAL</span>
+            </div>
+        </section>
 
         <!-- Data Source Indicator Bar -->
         <section class="source-grid">
@@ -42,18 +58,19 @@
                     <span class="tag real">Upload & Download Speed</span>
                     <span class="tag real">Bandwidth Utilization</span>
                     <span class="tag real">Wi-Fi Signal & SSID</span>
+                    <span class="tag real">Internet Connectivity Status</span>
+                    <span class="tag real">Connected Hotspot Devices (ARP Scan)</span>
                     <span class="tag real">CPU & RAM Usage</span>
                     <span class="tag real">Battery % & Charging</span>
-                    <span class="tag real">Laptop Temperature (If exposed)</span>
                 </div>
             </div>
 
             <div class="source-box sim-source">
-                <div class="source-head">⚡ SIMULATED PROTOTYPE DATA <small>(To Be Replaced by ESP32 Sensors)</small></div>
+                <div class="source-head">⚡ PROTOTYPE / SIMULATED DATA <small>(To Be Replaced by ESP32 Sensors)</small></div>
                 <div class="source-tags">
+                    <span class="tag sim">Tower Temperature (°C)</span>
                     <span class="tag sim">Tower Power Draw (W)</span>
                     <span class="tag sim">Tower Battery Voltage (V)</span>
-                    <span class="tag sim">Connected Users Count</span>
                     <span class="tag sim">Tower Load (%)</span>
                 </div>
             </div>
@@ -117,6 +134,13 @@
                 <span class="badge real">netsh State</span>
             </div>
 
+            <!-- CONNECTED HOTSPOT DEVICES (REAL-TIME ARP DETECTED) -->
+            <div class="kpi-card glass-panel real-border">
+                <span class="kpi-label">Connected Hotspot Devices</span>
+                <h2 class="kpi-val" id="kpi-hotspot-clients">0 devices</h2>
+                <span class="badge real">Real-time (ARP Scan)</span>
+            </div>
+
             <!-- Real laptop system health cards -->
             <div class="kpi-card glass-panel">
                 <span class="kpi-label">CPU Usage</span>
@@ -136,13 +160,13 @@
                 <span class="badge sys" id="kpi-battery-status">AC Power</span>
             </div>
 
-            <div class="kpi-card glass-panel">
+            <!-- Simulated tower cards -->
+            <div class="kpi-card glass-panel sim-border">
                 <span class="kpi-label">Laptop Temperature</span>
                 <h2 class="kpi-val" id="kpi-temp">-- °C</h2>
-                <span class="badge sys" id="kpi-temp-source">Sensor Check</span>
+                <span class="badge sim" id="kpi-temp-source">Sensor / Demo</span>
             </div>
 
-            <!-- Simulated tower cards -->
             <div class="kpi-card glass-panel sim-border">
                 <span class="kpi-label">Power Consumption</span>
                 <h2 class="kpi-val" id="kpi-power">0.0 W</h2>
@@ -156,12 +180,6 @@
             </div>
 
             <div class="kpi-card glass-panel sim-border">
-                <span class="kpi-label">Connected Users</span>
-                <h2 class="kpi-val" id="kpi-users">0</h2>
-                <span class="badge sim">Simulated Prototype</span>
-            </div>
-
-            <div class="kpi-card glass-panel sim-border">
                 <span class="kpi-label">Tower Load</span>
                 <h2 class="kpi-val" id="kpi-load">0.0 %</h2>
                 <span class="badge sim">Simulated Prototype</span>
@@ -169,7 +187,7 @@
 
         </section>
 
-        <!-- Middle Grid: AI Prediction & Active Alerts & Hotspot -->
+        <!-- Middle Grid: AI Prediction & Active Alerts & Hotspot Clients -->
         <div class="middle-layout">
             
             <!-- AI Prediction Engine -->
@@ -221,23 +239,26 @@
                 </div>
             </div>
 
-            <!-- Windows Mobile Hotspot Monitoring Panel -->
+            <!-- Windows Mobile Hotspot Connected Client Details Panel -->
             <div class="hotspot-box glass-panel">
                 <div class="panel-head">
-                    <h3>📶 Windows Mobile Hotspot Monitoring</h3>
-                    <span class="hotspot-pill" id="hotspot-status-pill">OFF</span>
+                    <h3>📶 Connected Hotspot Devices Details</h3>
+                    <span class="hotspot-pill" id="hotspot-status-pill">ACTIVE</span>
                 </div>
                 <div class="hotspot-body">
                     <div class="hotspot-row">
-                        <span>Interface Name:</span>
-                        <strong id="hotspot-interface">N/A</strong>
+                        <span>Hotspot Status:</span>
+                        <strong id="hotspot-state-text">ACTIVE</strong>
                     </div>
                     <div class="hotspot-row">
-                        <span>Session Data Usage:</span>
-                        <strong id="hotspot-usage">0.0 MB</strong>
+                        <span>Detected Devices:</span>
+                        <strong id="hotspot-device-count">0 Devices</strong>
                     </div>
-                    <div class="hotspot-notice">
-                        <p id="hotspot-notice-text">Connected Client Details Not Available Through Current OS Interface</p>
+                    <div class="client-ip-container">
+                        <span class="metric-label">Detected Client IP Addresses:</span>
+                        <div class="client-ip-list" id="client-ip-list">
+                            <div class="no-clients">No client devices currently attached.</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -289,21 +310,21 @@
 
             <div class="chart-box glass-panel">
                 <div class="chart-title">
-                    <h4>Laptop Temperature (°C)</h4>
-                    <span class="badge sys">Host / Demo</span>
+                    <h4>Tower Load (%) & Hotspot Devices</h4>
+                    <span class="badge sim">Real Devices + Load</span>
                 </div>
                 <div class="chart-canvas-wrap">
-                    <canvas id="chart-temp"></canvas>
+                    <canvas id="chart-load"></canvas>
                 </div>
             </div>
 
             <div class="chart-box glass-panel">
                 <div class="chart-title">
-                    <h4>Tower Load (%) & Connected Users</h4>
-                    <span class="badge sim">Simulated Prototype</span>
+                    <h4>Tower Temperature (°C)</h4>
+                    <span class="badge sim">Simulated / Demo</span>
                 </div>
                 <div class="chart-canvas-wrap">
-                    <canvas id="chart-load"></canvas>
+                    <canvas id="chart-temp"></canvas>
                 </div>
             </div>
 

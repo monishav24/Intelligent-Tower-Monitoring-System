@@ -1,8 +1,8 @@
 """
 Unified Background Monitoring Service.
-Orchestrates telemetry data collection, simulated parameters, anomaly evaluation,
-ML prediction, and database persistence in a daemon thread.
-Manages Demo Mode scenario overrides and resets to live monitoring.
+Orchestrates real-time network, live Windows ARP hotspot client scanning,
+internet connectivity checking, laptop system health, simulated tower parameters,
+ML prediction, and SQLite database persistence.
 """
 import threading
 import time
@@ -17,7 +17,8 @@ from collector.network_collector import NetworkCollector
 from collector.wifi_collector import get_wifi_info
 from collector.system_health import get_system_health
 from collector.temperature_collector import TemperatureCollector
-from collector.hotspot_monitor import get_hotspot_status
+from collector.hotspot_clients import get_connected_hotspot_clients
+from collector.internet_checker import check_internet_connectivity
 from collector.simulated_tower import SimulatedTowerCollector
 from ml.predictor import NetworkPredictor
 from services.anomaly_detection import AnomalyDetector
@@ -38,10 +39,7 @@ class MonitoringService:
         self.thread = None
 
     def set_demo_scenario(self, scenario):
-        """
-        Switch demonstration scenario override.
-        Scenarios: NORMAL, HIGH_TRAFFIC, NETWORK_CONGESTION, WEAK_SIGNAL, HIGH_TEMPERATURE, POWER_ANOMALY, NETWORK_DISCONNECTED
-        """
+        """Switch demonstration scenario override."""
         sc = scenario.upper()
         if sc == "NORMAL" or sc == "RESET":
             self.reset_demo_mode()
@@ -60,7 +58,7 @@ class MonitoringService:
         print(f"[Monitoring Service] Active Demo Mode Scenario: {self.demo_scenario}")
 
     def reset_demo_mode(self):
-        """Reset Demo Mode and return to pure live monitoring."""
+        """Reset Demo Mode and return to live monitoring."""
         self.demo_scenario = "NORMAL"
         self.is_demo_mode = False
         self.temp_collector.disable_demo_temperature()
@@ -79,7 +77,6 @@ class MonitoringService:
             print("[Monitoring Service] Telemetry daemon thread started.")
 
     def _run_loop(self):
-        # Warmup initial counter
         self.net_collector.get_metrics()
         time.sleep(0.5)
 
@@ -93,7 +90,14 @@ class MonitoringService:
                 # 2. Real Laptop Wi-Fi Signal & State
                 wifi_data = get_wifi_info()
 
-                # Handle Demo Mode Signal Override if applicable
+                # 3. Non-Blocking Internet Connectivity Check
+                internet_status = check_internet_connectivity()
+
+                # 4. Live Windows Hotspot Client Device Collector (ARP Scanning)
+                hotspot_client_data = get_connected_hotspot_clients()
+                real_client_count = hotspot_client_data["connected_client_count"]
+
+                # Handle Demo Mode Signal & Disconnect Overrides
                 if self.is_demo_mode and self.demo_scenario == "WEAK_SIGNAL":
                     wifi_data["signal_strength"] = 18.0
                     wifi_data["wifi_status"] = "CONNECTED"
@@ -102,20 +106,18 @@ class MonitoringService:
                     wifi_data["signal_strength"] = 0.0
                     wifi_data["wifi_status"] = "DISCONNECTED"
                     wifi_data["connection_quality"] = "DISCONNECTED"
+                    internet_status = "OFFLINE"
 
-                # 3. Real Laptop System Health Data
+                # 5. Real Laptop System Health Data
                 sys_health = get_system_health()
 
-                # 4. Laptop Temperature Data (Real or Fallback / Demo)
+                # 6. Laptop Temperature Data
                 temp_data = self.temp_collector.get_temperature()
                 sys_health["system_temperature"] = temp_data["temperature"]
                 sys_health["temperature_source"] = temp_data["source"]
 
-                # 5. Mobile Hotspot Data
-                hotspot_data = get_hotspot_status()
-
-                # 6. Simulated Tower Sensors (Tied to network load + active scenario)
-                sim_data = self.sim_collector.get_metrics(net_data, self.demo_scenario)
+                # 7. Simulated Tower Sensors (Tied to real hotspot device count + throughput + active scenario)
+                sim_data = self.sim_collector.get_metrics(net_data, real_client_count, self.demo_scenario)
 
                 # Combined Snapshot Object
                 snapshot = {
@@ -130,6 +132,7 @@ class MonitoringService:
                     "signal_strength": wifi_data["signal_strength"],
                     "wifi_status": wifi_data["wifi_status"],
                     "ssid": wifi_data["ssid"],
+                    "internet_status": internet_status,
                     "cpu_usage": sys_health["cpu_usage"],
                     "ram_usage": sys_health["ram_usage"],
                     "battery_percentage": sys_health["battery_percentage"],
@@ -138,30 +141,31 @@ class MonitoringService:
                     "temperature_source": sys_health["temperature_source"],
                     "power_consumption": sim_data["power_consumption"],
                     "battery_voltage": sim_data["battery_voltage"],
-                    "connected_users": sim_data["connected_users"],
+                    "connected_client_count": sim_data["connected_hotspot_devices"],
+                    "client_ip_list": hotspot_client_data["client_ip_list"],
+                    "client_details": hotspot_client_data["client_details"],
                     "tower_load": sim_data["tower_load"],
                     "data_source": "Laptop Real-Time + Simulated Sensors",
                     "is_demo_mode": 1 if self.is_demo_mode else 0,
                     "demo_scenario": self.demo_scenario,
-                    "hotspot_status": hotspot_data["hotspot_status"],
-                    "hotspot_interface": hotspot_data["interface_name"],
+                    "hotspot_status": hotspot_client_data["hotspot_active"],
+                    "hotspot_interface": "Windows Hotspot Interface",
                     "hotspot_traffic_mb": net_data["total_network_traffic"],
-                    "hotspot_client_count": hotspot_data["client_count"],
-                    "hotspot_client_details_status": hotspot_data["client_details_status"]
+                    "connection_status": hotspot_client_data["connection_status"]
                 }
 
-                # 7. Evaluate Anomaly Rules & Priority Status
+                # 8. Evaluate Anomaly Rules & Overall Priority Status
                 overall_status, anomaly_status, active_alerts = self.anomaly_detector.evaluate(snapshot)
                 snapshot["overall_status"] = overall_status
                 snapshot["anomaly_status"] = anomaly_status
 
-                # 8. ML Traffic Prediction & Congestion Engine
+                # 9. ML Traffic Prediction Engine
                 predictions = self.predictor.predict(snapshot)
                 snapshot["predicted_network_traffic"] = predictions["predicted_network_traffic"]
                 snapshot["congestion_risk"] = predictions["congestion_risk"]
                 snapshot["predicted_status"] = predictions["predicted_status"]
 
-                # 9. Store Snapshot & Generated Alerts to Database
+                # 10. Store Snapshot & Generated Alerts to Database
                 db.insert_telemetry_snapshot(snapshot)
                 self.alert_service.log_alerts(active_alerts)
 

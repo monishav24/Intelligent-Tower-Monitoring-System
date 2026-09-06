@@ -97,24 +97,14 @@ function initOfflineCharts() {
         options: { ...commonOpts, scales: { ...commonOpts.scales, y: { min: 0, max: 100 } } }
     });
 
-    // 5. Temperature
-    chartTemp = new Chart(document.getElementById('chart-temp').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{ label: 'Temperature (°C)', data: [], borderColor: '#ef4444', tension: 0.3, fill: true, backgroundColor: 'rgba(239, 68, 68, 0.15)' }]
-        },
-        options: { ...commonOpts, scales: { ...commonOpts.scales, y: { min: 20, max: 100 } } }
-    });
-
-    // 6. Tower Load & Users
+    // 5. Load & Hotspot Devices
     chartLoad = new Chart(document.getElementById('chart-load').getContext('2d'), {
         type: 'line',
         data: {
             labels: [],
             datasets: [
                 { label: 'Tower Load (%)', data: [], borderColor: '#eab308', yAxisID: 'yLoad', tension: 0.3 },
-                { label: 'Users', data: [], borderColor: '#6366f1', yAxisID: 'yUsers', tension: 0.3 }
+                { label: 'Hotspot Devices', data: [], borderColor: '#6366f1', yAxisID: 'yUsers', tension: 0.3 }
             ]
         },
         options: {
@@ -125,6 +115,16 @@ function initOfflineCharts() {
                 yUsers: { type: 'linear', position: 'right', min: 0 }
             }
         }
+    });
+
+    // 6. Temperature
+    chartTemp = new Chart(document.getElementById('chart-temp').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{ label: 'Temperature (°C)', data: [], borderColor: '#ef4444', tension: 0.3, fill: true, backgroundColor: 'rgba(239, 68, 68, 0.15)' }]
+        },
+        options: { ...commonOpts, scales: { ...commonOpts.scales, y: { min: 20, max: 100 } } }
     });
 
     // 7. Power & Battery Voltage
@@ -182,9 +182,29 @@ async function fetchTelemetry() {
 }
 
 /**
- * Update 14 KPI cards, AI panel, hotspot panel, and header status pill.
+ * Update Tri-Status Bar, 14 KPI cards, AI panel, and hotspot client IP panel.
  */
 function updateKpiCards(data) {
+    // 1. TRI-STATUS CONNECTIVITY BAR
+    const netStatus = data.internet_status || 'ONLINE';
+    const netBadge = document.getElementById('status-internet');
+    netBadge.textContent = netStatus;
+    netBadge.className = netStatus === 'ONLINE' ? 'status-badge online' : 'status-badge offline';
+
+    document.getElementById('status-local').textContent = 'ACTIVE';
+
+    const hotspotBadge = document.getElementById('status-hotspot');
+    const hotspotState = data.hotspot_status || 'ACTIVE';
+    hotspotBadge.textContent = hotspotState;
+    hotspotBadge.className = hotspotState === 'ACTIVE' ? 'status-badge active' : 'status-badge inactive';
+
+    const overallBadge = document.getElementById('status-overall');
+    const overallState = data.overall_status || 'NORMAL';
+    overallBadge.textContent = overallState;
+    overallBadge.className = overallState === 'DISCONNECTED' ? 'status-badge disconnected' :
+                            (overallState === 'CRITICAL' ? 'status-badge critical' :
+                            (overallState === 'WARNING' ? 'status-badge warning' : 'status-badge normal'));
+
     // Speeds & Traffic
     document.getElementById('kpi-upload').textContent = `${data.upload_speed.toFixed(1)} KB/s`;
     document.getElementById('kpi-download').textContent = `${data.download_speed.toFixed(1)} KB/s`;
@@ -194,19 +214,38 @@ function updateKpiCards(data) {
     document.getElementById('kpi-ssid').textContent = data.ssid || 'N/A';
     
     // Network status text
-    const netStatusEl = document.getElementById('kpi-net-status');
+    const netQualityEl = document.getElementById('kpi-net-status');
     if (data.wifi_status === 'DISCONNECTED' || data.signal_strength === 0) {
-        netStatusEl.textContent = 'DISCONNECTED';
-        netStatusEl.style.color = '#ef4444';
+        netQualityEl.textContent = 'DISCONNECTED';
+        netQualityEl.style.color = '#ef4444';
     } else {
-        netStatusEl.textContent = data.signal_strength >= 80 ? 'EXCELLENT' : (data.signal_strength >= 60 ? 'GOOD' : 'WEAK');
-        netStatusEl.style.color = '#10b981';
+        netQualityEl.textContent = data.signal_strength >= 80 ? 'EXCELLENT' : (data.signal_strength >= 60 ? 'GOOD' : 'WEAK');
+        netQualityEl.style.color = '#10b981';
+    }
+
+    // CONNECTED HOTSPOT DEVICES (REAL-TIME ARP DETECTED)
+    const clientCount = data.connected_client_count || 0;
+    document.getElementById('kpi-hotspot-clients').textContent = `${clientCount} device${clientCount !== 1 ? 's' : ''}`;
+    document.getElementById('hotspot-device-count').textContent = `${clientCount} Device${clientCount !== 1 ? 's' : ''}`;
+    document.getElementById('hotspot-state-text').textContent = hotspotState;
+
+    // Render detected client IP list
+    const clientIpFeed = document.getElementById('client-ip-list');
+    const clientList = data.client_ip_list || [];
+    if (clientList.length > 0) {
+        clientIpFeed.innerHTML = clientList.map(ip => `
+            <div class="client-ip-chip">
+                <span>🌐 ${ip}</span>
+                <span>CONNECTED</span>
+            </div>
+        `).join('');
+    } else {
+        clientIpFeed.innerHTML = `<div class="no-clients">No client devices currently attached.</div>`;
     }
 
     // System Health
     document.getElementById('kpi-cpu').textContent = `${data.cpu_usage.toFixed(1)} %`;
     document.getElementById('kpi-ram').textContent = `${data.ram_usage.toFixed(1)} %`;
-    
     document.getElementById('kpi-battery-pct').textContent = data.battery_percentage !== null ? `${data.battery_percentage}%` : 'N/A';
     document.getElementById('kpi-battery-status').textContent = data.battery_status || 'AC Power';
 
@@ -214,7 +253,7 @@ function updateKpiCards(data) {
     const tempSourceEl = document.getElementById('kpi-temp-source');
     if (data.system_temperature !== null) {
         tempEl.textContent = `${data.system_temperature.toFixed(1)} °C`;
-        tempSourceEl.textContent = data.temperature_source.includes('REAL') ? 'REAL Laptop' : 'SIMULATED';
+        tempSourceEl.textContent = data.temperature_source.includes('REAL') ? 'REAL Laptop' : 'Simulated / Demo';
     } else {
         tempEl.textContent = 'Sensor Unavailable';
         tempSourceEl.textContent = 'OS Unexposed';
@@ -223,26 +262,7 @@ function updateKpiCards(data) {
     // Simulated Tower
     document.getElementById('kpi-power').textContent = `${data.power_consumption.toFixed(1)} W`;
     document.getElementById('kpi-battery-v').textContent = `${data.battery_voltage.toFixed(2)} V`;
-    document.getElementById('kpi-users').textContent = data.connected_users;
     document.getElementById('kpi-load').textContent = `${data.tower_load.toFixed(1)} %`;
-
-    // Global Status Pill
-    const pill = document.getElementById('global-status-pill');
-    const pillText = document.getElementById('global-status-text');
-    pill.className = 'status-pill';
-
-    if (data.overall_status === 'DISCONNECTED') {
-        pill.classList.add('disconnected');
-        pillText.textContent = 'NETWORK DISCONNECTED';
-    } else if (data.overall_status === 'CRITICAL') {
-        pill.classList.add('critical');
-        pillText.textContent = 'SYSTEM CRITICAL';
-    } else if (data.overall_status === 'WARNING') {
-        pill.classList.add('warning');
-        pillText.textContent = 'SYSTEM WARNING';
-    } else {
-        pillText.textContent = 'SYSTEM NORMAL';
-    }
 
     // AI Prediction Panel
     document.getElementById('ai-pred-traffic').textContent = `${data.predicted_network_traffic.toFixed(2)} Mbps`;
@@ -268,15 +288,6 @@ function updateKpiCards(data) {
     predStatusEl.className = data.predicted_status === 'DISCONNECTED' ? 'status-disc' : 
                             (data.predicted_status === 'CRITICAL' ? 'status-crit' : 
                             (data.predicted_status === 'WARNING' ? 'status-warn' : 'status-norm'));
-
-    // Hotspot Panel
-    const hotspotPill = document.getElementById('hotspot-status-pill');
-    hotspotPill.textContent = data.hotspot_status;
-    hotspotPill.className = data.hotspot_status === 'ON' ? 'hotspot-pill on' : 'hotspot-pill';
-
-    document.getElementById('hotspot-interface').textContent = data.hotspot_interface || 'N/A';
-    document.getElementById('hotspot-usage').textContent = `${data.total_network_traffic.toFixed(1)} MB`;
-    document.getElementById('hotspot-notice-text').textContent = data.hotspot_client_details_status;
 
     // Active scenario tag
     document.getElementById('active-scenario-name').textContent = data.demo_scenario || 'NORMAL OPERATION';
@@ -348,16 +359,16 @@ function updateCharts(history) {
     chartSys.data.datasets[1].data = history.map(h => h.ram_usage);
     chartSys.update();
 
-    // 5. Temp
+    // 5. Load & Hotspot Devices
+    chartLoad.data.labels = labels;
+    chartLoad.data.datasets[0].data = history.map(h => h.tower_load);
+    chartLoad.data.datasets[1].data = history.map(h => h.connected_client_count || 0);
+    chartLoad.update();
+
+    // 6. Temp
     chartTemp.data.labels = labels;
     chartTemp.data.datasets[0].data = history.map(h => h.system_temperature || 0);
     chartTemp.update();
-
-    // 6. Load & Users
-    chartLoad.data.labels = labels;
-    chartLoad.data.datasets[0].data = history.map(h => h.tower_load);
-    chartLoad.data.datasets[1].data = history.map(h => h.connected_users);
-    chartLoad.update();
 
     // 7. Power & Battery Voltage
     chartPower.data.labels = labels;

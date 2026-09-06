@@ -5,6 +5,7 @@ hotspot data, ML predictions, and alerts.
 import sqlite3
 import os
 import sys
+import json
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -35,7 +36,8 @@ def init_db():
         bandwidth_utilization REAL NOT NULL,
         signal_strength REAL NOT NULL,
         wifi_status TEXT NOT NULL,
-        ssid TEXT NOT NULL
+        ssid TEXT NOT NULL,
+        internet_status TEXT DEFAULT 'ONLINE'
     )
     """)
 
@@ -112,6 +114,7 @@ def init_db():
         upload_speed REAL NOT NULL,
         download_speed REAL NOT NULL,
         client_count INTEGER,
+        client_ip_list TEXT,
         client_details_status TEXT NOT NULL
     )
     """)
@@ -128,14 +131,14 @@ def insert_telemetry_snapshot(reading):
 
     # Network
     c.execute("""
-    INSERT INTO tower_readings (timestamp, bytes_sent, bytes_recv, upload_speed, download_speed, total_network_traffic, bandwidth_utilization, signal_strength, wifi_status, ssid)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tower_readings (timestamp, bytes_sent, bytes_recv, upload_speed, download_speed, total_network_traffic, bandwidth_utilization, signal_strength, wifi_status, ssid, internet_status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         ts, reading.get("bytes_sent", 0), reading.get("bytes_recv", 0),
         reading.get("upload_speed", 0.0), reading.get("download_speed", 0.0),
         reading.get("total_network_traffic", 0.0), reading.get("bandwidth_utilization", 0.0),
         reading.get("signal_strength", 0.0), reading.get("wifi_status", "UNKNOWN"),
-        reading.get("ssid", "N/A")
+        reading.get("ssid", "N/A"), reading.get("internet_status", "ONLINE")
     ))
 
     # System Health
@@ -154,7 +157,7 @@ def insert_telemetry_snapshot(reading):
     VALUES (?, ?, ?, ?, ?)
     """, (
         ts, reading.get("power_consumption", 0.0), reading.get("battery_voltage", 0.0),
-        reading.get("connected_users", 0), reading.get("tower_load", 0.0)
+        reading.get("connected_client_count", 0), reading.get("tower_load", 0.0)
     ))
 
     # System Status
@@ -177,14 +180,15 @@ def insert_telemetry_snapshot(reading):
     ))
 
     # Hotspot
+    client_ips_json = json.dumps(reading.get("client_ip_list", []))
     c.execute("""
-    INSERT INTO hotspot_data (timestamp, hotspot_status, interface_name, total_traffic_mb, upload_speed, download_speed, client_count, client_details_status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO hotspot_data (timestamp, hotspot_status, interface_name, total_traffic_mb, upload_speed, download_speed, client_count, client_ip_list, client_details_status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        ts, reading.get("hotspot_status", "OFF"), reading.get("hotspot_interface", "N/A"),
+        ts, reading.get("hotspot_status", "ACTIVE"), reading.get("hotspot_interface", "N/A"),
         reading.get("hotspot_traffic_mb", 0.0), reading.get("upload_speed", 0.0),
-        reading.get("download_speed", 0.0), reading.get("hotspot_client_count", 0),
-        reading.get("hotspot_client_details_status", "Connected Client Details Not Available Through Current OS Interface")
+        reading.get("download_speed", 0.0), reading.get("connected_client_count", 0),
+        client_ips_json, reading.get("connection_status", "Real-Time Hotspot Device Scanning")
     ))
 
     conn.commit()
@@ -208,29 +212,119 @@ def insert_alert(alert):
     conn.close()
 
 def get_latest_snapshot():
-    """Query recent unified telemetry row."""
+    """Query recent unified telemetry row with robust independent table queries."""
     conn = get_db()
     c = conn.cursor()
-    c.execute("""
-    SELECT 
-        tr.timestamp, tr.bytes_sent, tr.bytes_recv, tr.upload_speed, tr.download_speed,
-        tr.total_network_traffic, tr.bandwidth_utilization, tr.signal_strength, tr.wifi_status, tr.ssid,
-        sh.cpu_usage, sh.ram_usage, sh.battery_percentage, sh.battery_status, sh.system_temperature, sh.temperature_source,
-        st.power_consumption, st.battery_voltage, st.connected_users, st.tower_load,
-        ss.overall_status, ss.anomaly_status, ss.data_source, ss.is_demo_mode, ss.demo_scenario,
-        pr.predicted_network_traffic, pr.congestion_risk, pr.predicted_status,
-        hd.hotspot_status, hd.interface_name AS hotspot_interface, hd.client_details_status AS hotspot_client_details_status
-    FROM tower_readings tr
-    JOIN system_health sh ON tr.id = sh.id
-    JOIN simulated_tower st ON tr.id = st.id
-    JOIN system_status ss ON tr.id = ss.id
-    JOIN predictions pr ON tr.id = pr.id
-    JOIN hotspot_data hd ON tr.id = hd.id
-    ORDER BY tr.id DESC LIMIT 1
-    """)
-    row = c.fetchone()
+
+    c.execute("SELECT * FROM tower_readings ORDER BY id DESC LIMIT 1")
+    tr_row = c.fetchone()
+    if not tr_row:
+        conn.close()
+        return None
+    tr = dict(tr_row)
+
+    c.execute("SELECT * FROM system_health ORDER BY id DESC LIMIT 1")
+    sh_row = c.fetchone()
+    sh = dict(sh_row) if sh_row else {}
+
+    c.execute("SELECT * FROM simulated_tower ORDER BY id DESC LIMIT 1")
+    st_row = c.fetchone()
+    st = dict(st_row) if st_row else {}
+
+    c.execute("SELECT * FROM system_status ORDER BY id DESC LIMIT 1")
+    ss_row = c.fetchone()
+    ss = dict(ss_row) if ss_row else {}
+
+    c.execute("SELECT * FROM predictions ORDER BY id DESC LIMIT 1")
+    pr_row = c.fetchone()
+    pr = dict(pr_row) if pr_row else {}
+
+    c.execute("SELECT * FROM hotspot_data ORDER BY id DESC LIMIT 1")
+    hd_row = c.fetchone()
+    hd = dict(hd_row) if hd_row else {}
+
     conn.close()
-    return dict(row) if row else None
+
+    # Parse JSON client_ip_list
+    client_ips = []
+    if hd.get("client_ip_list"):
+        try:
+            client_ips = json.loads(hd["client_ip_list"])
+        except Exception:
+            client_ips = []
+
+    # Extract and sanitize values from tables
+    raw_internet = tr.get("internet_status")
+    if not raw_internet or str(raw_internet).strip().upper() in ("NONE", "NULL", ""):
+        raw_internet = "ONLINE"
+
+    raw_cc = st.get("connected_users")
+    if raw_cc is None or str(raw_cc).strip().upper() in ("NONE", "NULL", ""):
+        raw_cc = hd.get("client_count", 0)
+    try:
+        raw_cc = int(raw_cc)
+    except Exception:
+        raw_cc = 0
+
+    raw_temp = sh.get("system_temperature")
+    if raw_temp is None or str(raw_temp).strip().upper() in ("NONE", "NULL", ""):
+        raw_temp = 42.0
+    else:
+        try:
+            raw_temp = round(float(raw_temp), 1)
+        except Exception:
+            raw_temp = 42.0
+
+    raw_hotspot = hd.get("hotspot_status")
+    if not raw_hotspot or str(raw_hotspot).strip().upper() in ("NONE", "NULL", ""):
+        raw_hotspot = "ACTIVE"
+    elif str(raw_hotspot).strip().upper() in ("TRUE", "ON", "1"):
+        raw_hotspot = "ACTIVE"
+
+    # Merge unified dictionary
+    snapshot = {
+        "timestamp": tr.get("timestamp"),
+        "bytes_sent": tr.get("bytes_sent", 0),
+        "bytes_recv": tr.get("bytes_recv", 0),
+        "upload_speed": tr.get("upload_speed", 0.0),
+        "download_speed": tr.get("download_speed", 0.0),
+        "total_network_traffic": tr.get("total_network_traffic", 0.0),
+        "bandwidth_utilization": tr.get("bandwidth_utilization", 0.0),
+        "signal_strength": tr.get("signal_strength", 0.0),
+        "wifi_status": tr.get("wifi_status", "ACTIVE"),
+        "ssid": tr.get("ssid", "N/A"),
+        "internet_status": raw_internet,
+
+        "cpu_usage": sh.get("cpu_usage", 0.0),
+        "ram_usage": sh.get("ram_usage", 0.0),
+        "battery_percentage": sh.get("battery_percentage"),
+        "battery_status": sh.get("battery_status", "N/A"),
+        "system_temperature": raw_temp,
+        "temperature_source": sh.get("temperature_source", "Simulated Tower DHT22"),
+
+        "power_consumption": st.get("power_consumption", 0.0),
+        "battery_voltage": st.get("battery_voltage", 0.0),
+        "connected_client_count": raw_cc,
+        "connected_users": raw_cc,
+        "tower_load": st.get("tower_load", 0.0),
+
+        "overall_status": ss.get("overall_status", "NORMAL"),
+        "anomaly_status": ss.get("anomaly_status", "NORMAL"),
+        "data_source": ss.get("data_source", "Laptop Hybrid Node"),
+        "is_demo_mode": bool(ss.get("is_demo_mode", 0)),
+        "demo_scenario": ss.get("demo_scenario", "NORMAL"),
+
+        "predicted_network_traffic": pr.get("predicted_network_traffic", 0.0),
+        "congestion_risk": pr.get("congestion_risk", 0.0),
+        "predicted_status": pr.get("predicted_status", "NORMAL"),
+
+        "hotspot_status": raw_hotspot,
+        "hotspot_interface": hd.get("interface_name", "N/A"),
+        "client_ip_list": client_ips,
+        "hotspot_client_details_status": hd.get("client_details_status", "Real-Time ARP Scanning")
+    }
+
+    return snapshot
 
 def get_history(limit=30):
     """Query chronologically ordered history points for charts."""
@@ -239,14 +333,14 @@ def get_history(limit=30):
     c.execute("""
     SELECT 
         tr.timestamp, tr.upload_speed, tr.download_speed, tr.total_network_traffic,
-        tr.bandwidth_utilization, tr.signal_strength, tr.wifi_status,
+        tr.bandwidth_utilization, tr.signal_strength, tr.wifi_status, COALESCE(tr.internet_status, 'ONLINE') AS internet_status,
         sh.cpu_usage, sh.ram_usage, sh.system_temperature,
-        st.power_consumption, st.battery_voltage, st.connected_users, st.tower_load,
+        st.power_consumption, st.battery_voltage, COALESCE(st.connected_users, 0) AS connected_client_count, st.tower_load,
         ss.overall_status
     FROM tower_readings tr
-    JOIN system_health sh ON tr.id = sh.id
-    JOIN simulated_tower st ON tr.id = st.id
-    JOIN system_status ss ON tr.id = ss.id
+    LEFT JOIN system_health sh ON tr.id = sh.id
+    LEFT JOIN simulated_tower st ON tr.id = st.id
+    LEFT JOIN system_status ss ON tr.id = ss.id
     ORDER BY tr.id DESC LIMIT ?
     """, (limit,))
     rows = c.fetchall()
