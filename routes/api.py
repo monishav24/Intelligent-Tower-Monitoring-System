@@ -1,39 +1,42 @@
 """
-Flask REST API Routes for Intelligent Telecom Tower Monitoring System.
-Exposes JSON endpoints for real-time telemetry, historical chart data, ML predictions, alerts, and demo mode.
+Flask REST API Blueprint module exposing JSON telemetry endpoints for dashboard, ML, system health, and demo mode controls.
 """
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from flask import Blueprint, jsonify, request
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database.database as db
 import config
 
 api_bp = Blueprint("api", __name__)
 
-# Global runtime state for demo mode and bandwidth setting
-current_demo_scenario = "NORMAL"
+# Reference to background monitoring service instance (bound in app.py)
+monitoring_service_instance = None
+
+def init_api_service(service):
+    """Bind global monitoring service reference."""
+    global monitoring_service_instance
+    monitoring_service_instance = service
 
 @api_bp.route("/api/latest", methods=["GET"])
 def get_latest():
-    """Retrieve the latest real-time reading, ML prediction, and active status."""
-    latest = db.get_latest_reading()
-    alerts = db.get_recent_alerts(limit=5)
-    
-    if not latest:
-        return jsonify({"status": "no_data", "message": "Collector warming up..."}), 200
+    """Retrieve full latest telemetry snapshot."""
+    snapshot = db.get_latest_snapshot()
+    alerts = db.get_active_alerts(limit=5)
+    if not snapshot:
+        return jsonify({"status": "no_data", "message": "Telemetry collector warming up..."}), 200
 
     return jsonify({
         "status": "success",
-        "data": latest,
+        "data": snapshot,
         "recent_alerts": alerts,
-        "demo_scenario": current_demo_scenario,
-        "system_info": config.SYSTEM_METADATA
+        "system_metadata": config.SYSTEM_METADATA
     })
 
 @api_bp.route("/api/history", methods=["GET"])
 def get_history():
-    """Retrieve historical time-series data points for live Chart.js rendering."""
+    """Retrieve time-series points for Chart.js rendering."""
     limit = request.args.get("limit", default=30, type=int)
     limit = min(max(limit, 5), 200)
     history = db.get_history(limit=limit)
@@ -43,99 +46,166 @@ def get_history():
         "data": history
     })
 
-@api_bp.route("/api/prediction", methods=["GET"])
-def get_prediction():
-    """Retrieve ML traffic forecast, congestion risk, and confidence metrics."""
-    latest = db.get_latest_reading()
-    if not latest:
+@api_bp.route("/api/network", methods=["GET"])
+def get_network_metrics():
+    """Retrieve real-time laptop network parameters."""
+    snapshot = db.get_latest_snapshot()
+    if not snapshot:
         return jsonify({"status": "no_data"}), 200
 
     return jsonify({
         "status": "success",
-        "predicted_traffic_mbps": latest.get("predicted_traffic", 0.0),
-        "congestion_risk_pct": latest.get("congestion_risk", 0.0),
-        "predicted_status": latest.get("predicted_status", "NORMAL"),
-        "current_throughput_mbps": latest.get("upload_speed", 0.0) + latest.get("download_speed", 0.0),
-        "timestamp": latest.get("timestamp")
+        "bytes_sent": snapshot.get("bytes_sent"),
+        "bytes_recv": snapshot.get("bytes_recv"),
+        "upload_speed_kbps": snapshot.get("upload_speed"),
+        "download_speed_kbps": snapshot.get("download_speed"),
+        "total_network_traffic_mb": snapshot.get("total_network_traffic"),
+        "bandwidth_utilization_pct": snapshot.get("bandwidth_utilization"),
+        "signal_strength_pct": snapshot.get("signal_strength"),
+        "wifi_status": snapshot.get("wifi_status"),
+        "ssid": snapshot.get("ssid")
+    })
+
+@api_bp.route("/api/system-health", methods=["GET"])
+def get_system_health():
+    """Retrieve laptop host CPU, RAM, Battery, and Temperature parameters."""
+    snapshot = db.get_latest_snapshot()
+    if not snapshot:
+        return jsonify({"status": "no_data"}), 200
+
+    return jsonify({
+        "status": "success",
+        "cpu_usage_pct": snapshot.get("cpu_usage"),
+        "ram_usage_pct": snapshot.get("ram_usage"),
+        "battery_percentage": snapshot.get("battery_percentage"),
+        "battery_status": snapshot.get("battery_status"),
+        "system_temperature": snapshot.get("system_temperature"),
+        "temperature_source": snapshot.get("temperature_source"),
+        "node_label": "Prototype Node System Health"
+    })
+
+@api_bp.route("/api/tower", methods=["GET"])
+def get_tower_metrics():
+    """Retrieve simulated physical telecom tower parameters."""
+    snapshot = db.get_latest_snapshot()
+    if not snapshot:
+        return jsonify({"status": "no_data"}), 200
+
+    return jsonify({
+        "status": "success",
+        "power_consumption_w": snapshot.get("power_consumption"),
+        "battery_voltage_v": snapshot.get("battery_voltage"),
+        "connected_users": snapshot.get("connected_users"),
+        "tower_load_pct": snapshot.get("tower_load"),
+        "data_source": "SIMULATED PROTOTYPE DATA"
+    })
+
+@api_bp.route("/api/hotspot", methods=["GET"])
+def get_hotspot_metrics():
+    """Retrieve Mobile Hotspot status and shared interface data usage."""
+    snapshot = db.get_latest_snapshot()
+    if not snapshot:
+        return jsonify({"status": "no_data"}), 200
+
+    return jsonify({
+        "status": "success",
+        "hotspot_status": snapshot.get("hotspot_status"),
+        "interface_name": snapshot.get("hotspot_interface"),
+        "client_count": snapshot.get("hotspot_client_count"),
+        "client_details_status": snapshot.get("hotspot_client_details_status")
+    })
+
+@api_bp.route("/api/prediction", methods=["GET"])
+def get_prediction():
+    """Retrieve Random Forest ML forecast and congestion risk."""
+    snapshot = db.get_latest_snapshot()
+    if not snapshot:
+        return jsonify({"status": "no_data"}), 200
+
+    return jsonify({
+        "status": "success",
+        "predicted_network_traffic_mbps": snapshot.get("predicted_network_traffic"),
+        "congestion_risk_pct": snapshot.get("congestion_risk"),
+        "predicted_status": snapshot.get("predicted_status"),
+        "model_type": "Random Forest Regressor & Classifier"
     })
 
 @api_bp.route("/api/alerts", methods=["GET"])
 def get_alerts():
-    """Retrieve recent alerts log."""
+    """Retrieve active system alerts log."""
     limit = request.args.get("limit", default=20, type=int)
-    alerts = db.get_recent_alerts(limit=limit)
+    alerts = db.get_active_alerts(limit=limit)
     return jsonify({
         "status": "success",
         "count": len(alerts),
         "alerts": alerts
     })
 
+@api_bp.route("/api/status", methods=["GET"])
+def get_system_status():
+    """Retrieve overall architecture status, data sources, and completion breakdown."""
+    snapshot = db.get_latest_snapshot()
+    overall = snapshot.get("overall_status") if snapshot else "NORMAL"
+    return jsonify({
+        "status": "success",
+        "overall_status": overall,
+        "project_title": config.SYSTEM_METADATA["title"],
+        "completion_status": config.SYSTEM_METADATA["completion"],
+        "realtime_parameters": config.SYSTEM_METADATA["realtime_parameters"],
+        "simulated_parameters": config.SYSTEM_METADATA["simulated_parameters"],
+        "future_hardware": config.SYSTEM_METADATA["future_hardware"]
+    })
+
 @api_bp.route("/api/demo-mode", methods=["POST"])
 def set_demo_mode():
     """
-    Switch demonstration scenario.
-    Supported scenarios: NORMAL, HIGH_TRAFFIC, NETWORK_CONGESTION, WEAK_SIGNAL, HIGH_TEMPERATURE, POWER_FAILURE
+    Switch Demonstration Mode Scenario.
+    Scenarios: NORMAL, HIGH_TRAFFIC, NETWORK_CONGESTION, WEAK_SIGNAL, HIGH_TEMPERATURE, POWER_ANOMALY, NETWORK_DISCONNECTED
     """
-    global current_demo_scenario
-    req_data = request.get_json(silent=True) or {}
-    scenario = req_data.get("scenario", "NORMAL").upper()
-    
+    req = request.get_json(silent=True) or {}
+    scenario = req.get("scenario", "NORMAL").upper()
+
     valid_scenarios = [
         "NORMAL", "HIGH_TRAFFIC", "NETWORK_CONGESTION",
-        "WEAK_SIGNAL", "HIGH_TEMPERATURE", "POWER_FAILURE"
+        "WEAK_SIGNAL", "HIGH_TEMPERATURE", "POWER_ANOMALY", "NETWORK_DISCONNECTED"
     ]
 
     if scenario not in valid_scenarios:
-        return jsonify({"status": "error", "message": f"Invalid scenario. Choose from {valid_scenarios}"}), 400
+        return jsonify({"status": "error", "message": f"Invalid scenario. Supported: {valid_scenarios}"}), 400
 
-    current_demo_scenario = scenario
-    
-    # Import app background collector if needed to update scenario immediately
-    from app import update_demo_scenario
-    update_demo_scenario(scenario)
+    if monitoring_service_instance:
+        monitoring_service_instance.set_demo_scenario(scenario)
 
     return jsonify({
         "status": "success",
-        "active_scenario": current_demo_scenario,
-        "message": f"Demonstration mode switched to '{current_demo_scenario}'"
+        "active_scenario": scenario,
+        "message": f"Demo mode switched to '{scenario}'"
+    })
+
+@api_bp.route("/api/demo-mode/reset", methods=["POST"])
+def reset_demo_mode():
+    """Reset Demo Mode and return to live monitoring."""
+    if monitoring_service_instance:
+        monitoring_service_instance.reset_demo_mode()
+
+    return jsonify({
+        "status": "success",
+        "message": "Returned to LIVE monitoring mode."
     })
 
 @api_bp.route("/api/config/bandwidth", methods=["POST"])
-def set_bandwidth():
+def update_bandwidth():
     """Update maximum bandwidth threshold in Mbps."""
-    req_data = request.get_json(silent=True) or {}
-    mbps = req_data.get("max_bandwidth_mbps")
+    req = request.get_json(silent=True) or {}
+    mbps = req.get("max_bandwidth_mbps")
     if not mbps or float(mbps) <= 0:
-        return jsonify({"status": "error", "message": "Provide valid positive max_bandwidth_mbps"}), 400
+        return jsonify({"status": "error", "message": "Provide positive max_bandwidth_mbps"}), 400
 
-    from app import set_max_bandwidth
-    set_max_bandwidth(float(mbps))
+    if monitoring_service_instance:
+        monitoring_service_instance.set_max_bandwidth(float(mbps))
 
     return jsonify({
         "status": "success",
         "max_bandwidth_mbps": float(mbps),
         "message": f"Maximum bandwidth updated to {mbps} Mbps"
-    })
-
-@api_bp.route("/api/status", methods=["GET"])
-def get_system_status():
-    """Return overall architecture status and project completion breakdown."""
-    return jsonify({
-        "project_title": config.SYSTEM_METADATA["title"],
-        "completion": config.SYSTEM_METADATA["completion_status"],
-        "realtime_parameters": [
-            "Network Traffic (Bytes Sent/Recv)",
-            "Upload Speed (KB/s & Mbps)",
-            "Download Speed (KB/s & Mbps)",
-            "Bandwidth Utilization (%)",
-            "Wi-Fi Signal Strength (%)"
-        ],
-        "simulated_parameters": [
-            "Tower Temperature (°C)",
-            "Battery Voltage (V)",
-            "Power Consumption (W)",
-            "Connected Users (Count)",
-            "Tower Load (%)"
-        ],
-        "hardware_roadmap": config.SYSTEM_METADATA["future_hardware"]
     })

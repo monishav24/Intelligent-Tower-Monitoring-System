@@ -1,50 +1,48 @@
 /**
  * Intelligent Telecom Tower Monitoring Dashboard JavaScript
- * Real-time polling, Chart.js telemetry visualization, AI prediction, and Demo Mode interactions.
+ * 100% Offline-First Execution, Real-Time Polling, Local Chart.js Graphs & Demo Mode Controls
  */
 
-// Global Chart Instances
-let chartSpeeds, chartBandwidth, chartSignal, chartTemp, chartPower, chartLoad;
+let chartSpeeds, chartBandwidth, chartSignal, chartSys, chartTemp, chartLoad, chartPower, chartTraffic;
 
-// Max data points shown in live sliding window
-const MAX_HISTORICAL_POINTS = 25;
+const MAX_HISTORY_POINTS = 25;
 
 document.addEventListener('DOMContentLoaded', () => {
-    initClock();
-    initCharts();
-    fetchTelemetryData();
+    startClock();
+    initOfflineCharts();
+    fetchTelemetry();
     
-    // Poll API every 2 seconds
-    setInterval(fetchTelemetryData, 2000);
+    // Poll local REST API every 2 seconds
+    setInterval(fetchTelemetry, 2000);
 });
 
 /**
- * Initialize live digital header clock.
+ * Header digital clock ticker.
  */
-function initClock() {
+function startClock() {
     const clockEl = document.getElementById('live-clock');
-    const updateTime = () => {
+    const update = () => {
         const now = new Date();
         clockEl.textContent = now.toLocaleTimeString();
     };
-    updateTime();
-    setInterval(updateTime, 1000);
+    update();
+    setInterval(update, 1000);
 }
 
 /**
- * Configure Chart.js global defaults and initialize 6 telemetry charts.
+ * Initialize 8 Chart.js multi-series graphs using local vendor library.
  */
-function initCharts() {
+function initOfflineCharts() {
     Chart.defaults.color = '#94a3b8';
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.06)';
-    Chart.defaults.font.family = 'Outfit, sans-serif';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-    const commonOptions = {
+    const commonOpts = {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 400 },
+        animation: { duration: 300 },
         plugins: {
-            legend: { position: 'top', labels: { boxWidth: 12, padding: 10 } },
+            legend: { position: 'top', labels: { boxWidth: 10, padding: 8 } },
             tooltip: { mode: 'index', intersect: false }
         },
         scales: {
@@ -53,201 +51,178 @@ function initCharts() {
         }
     };
 
-    // 1. Speeds Chart (Upload & Download)
-    const ctxSpeeds = document.getElementById('chart-speeds').getContext('2d');
-    chartSpeeds = new Chart(ctxSpeeds, {
+    // 1. Speeds
+    chartSpeeds = new Chart(document.getElementById('chart-speeds').getContext('2d'), {
         type: 'line',
         data: {
             labels: [],
             datasets: [
-                {
-                    label: 'Upload (KB/s)',
-                    data: [],
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    fill: true,
-                    tension: 0.3
-                },
-                {
-                    label: 'Download (KB/s)',
-                    data: [],
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                    fill: true,
-                    tension: 0.3
-                }
+                { label: 'Upload (KB/s)', data: [], borderColor: '#10b981', tension: 0.3, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)' },
+                { label: 'Download (KB/s)', data: [], borderColor: '#06b6d4', tension: 0.3, fill: true, backgroundColor: 'rgba(6, 182, 212, 0.1)' }
             ]
         },
-        options: commonOptions
+        options: commonOpts
     });
 
-    // 2. Bandwidth Utilization Chart
-    const ctxBw = document.getElementById('chart-bandwidth').getContext('2d');
-    chartBandwidth = new Chart(ctxBw, {
+    // 2. Bandwidth
+    chartBandwidth = new Chart(document.getElementById('chart-bandwidth').getContext('2d'), {
         type: 'line',
         data: {
             labels: [],
-            datasets: [{
-                label: 'Usage (%)',
-                data: [],
-                borderColor: '#8b5cf6',
-                backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                fill: true,
-                tension: 0.3
-            }]
+            datasets: [{ label: 'Bandwidth Usage (%)', data: [], borderColor: '#8b5cf6', tension: 0.3, fill: true, backgroundColor: 'rgba(139, 92, 246, 0.15)' }]
         },
-        options: {
-            ...commonOptions,
-            scales: { ...commonOptions.scales, y: { min: 0, max: 100 } }
-        }
+        options: { ...commonOpts, scales: { ...commonOpts.scales, y: { min: 0, max: 100 } } }
     });
 
-    // 3. Wi-Fi Signal Strength Chart
-    const ctxSignal = document.getElementById('chart-signal').getContext('2d');
-    chartSignal = new Chart(ctxSignal, {
+    // 3. Signal
+    chartSignal = new Chart(document.getElementById('chart-signal').getContext('2d'), {
         type: 'line',
         data: {
             labels: [],
-            datasets: [{
-                label: 'Signal (%)',
-                data: [],
-                borderColor: '#f97316',
-                backgroundColor: 'rgba(249, 115, 22, 0.15)',
-                fill: true,
-                tension: 0.3
-            }]
+            datasets: [{ label: 'Wi-Fi Signal (%)', data: [], borderColor: '#f97316', tension: 0.3, fill: true, backgroundColor: 'rgba(249, 115, 22, 0.15)' }]
         },
-        options: {
-            ...commonOptions,
-            scales: { ...commonOptions.scales, y: { min: 0, max: 100 } }
-        }
+        options: { ...commonOpts, scales: { ...commonOpts.scales, y: { min: 0, max: 100 } } }
     });
 
-    // 4. Temperature Chart
-    const ctxTemp = document.getElementById('chart-temp').getContext('2d');
-    chartTemp = new Chart(ctxTemp, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Temp (°C)',
-                data: [],
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            ...commonOptions,
-            scales: { ...commonOptions.scales, y: { min: 20, max: 70 } }
-        }
-    });
-
-    // 5. Power & Battery Chart
-    const ctxPower = document.getElementById('chart-power').getContext('2d');
-    chartPower = new Chart(ctxPower, {
+    // 4. System CPU & RAM
+    chartSys = new Chart(document.getElementById('chart-sys').getContext('2d'), {
         type: 'line',
         data: {
             labels: [],
             datasets: [
-                {
-                    label: 'Power Draw (W)',
-                    data: [],
-                    borderColor: '#eab308',
-                    yAxisID: 'yPower',
-                    tension: 0.3
-                },
-                {
-                    label: 'Battery (V)',
-                    data: [],
-                    borderColor: '#14b8a6',
-                    yAxisID: 'yBattery',
-                    tension: 0.3
-                }
+                { label: 'CPU Usage (%)', data: [], borderColor: '#3b82f6', tension: 0.3 },
+                { label: 'RAM Usage (%)', data: [], borderColor: '#ec4899', tension: 0.3 }
+            ]
+        },
+        options: { ...commonOpts, scales: { ...commonOpts.scales, y: { min: 0, max: 100 } } }
+    });
+
+    // 5. Temperature
+    chartTemp = new Chart(document.getElementById('chart-temp').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{ label: 'Temperature (°C)', data: [], borderColor: '#ef4444', tension: 0.3, fill: true, backgroundColor: 'rgba(239, 68, 68, 0.15)' }]
+        },
+        options: { ...commonOpts, scales: { ...commonOpts.scales, y: { min: 20, max: 100 } } }
+    });
+
+    // 6. Tower Load & Users
+    chartLoad = new Chart(document.getElementById('chart-load').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                { label: 'Tower Load (%)', data: [], borderColor: '#eab308', yAxisID: 'yLoad', tension: 0.3 },
+                { label: 'Users', data: [], borderColor: '#6366f1', yAxisID: 'yUsers', tension: 0.3 }
             ]
         },
         options: {
-            ...commonOptions,
+            ...commonOpts,
             scales: {
-                x: commonOptions.scales.x,
-                yPower: { type: 'linear', position: 'left', title: { display: true, text: 'Watts' } },
-                yBattery: { type: 'linear', position: 'right', title: { display: true, text: 'Volts' }, min: 9, max: 14 }
-            }
-        }
-    });
-
-    // 6. Tower Load & Connected Users Chart
-    const ctxLoad = document.getElementById('chart-load').getContext('2d');
-    chartLoad = new Chart(ctxLoad, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Tower Load (%)',
-                    data: [],
-                    borderColor: '#ec4899',
-                    yAxisID: 'yLoad',
-                    tension: 0.3
-                },
-                {
-                    label: 'Users',
-                    data: [],
-                    borderColor: '#6366f1',
-                    yAxisID: 'yUsers',
-                    tension: 0.3
-                }
-            ]
-        },
-        options: {
-            ...commonOptions,
-            scales: {
-                x: commonOptions.scales.x,
+                x: commonOpts.scales.x,
                 yLoad: { type: 'linear', position: 'left', min: 0, max: 100 },
                 yUsers: { type: 'linear', position: 'right', min: 0 }
             }
         }
     });
+
+    // 7. Power & Battery Voltage
+    chartPower = new Chart(document.getElementById('chart-power').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                { label: 'Power Draw (W)', data: [], borderColor: '#14b8a6', yAxisID: 'yPower', tension: 0.3 },
+                { label: 'Battery (V)', data: [], borderColor: '#8b5cf6', yAxisID: 'yBattery', tension: 0.3 }
+            ]
+        },
+        options: {
+            ...commonOpts,
+            scales: {
+                x: commonOpts.scales.x,
+                yPower: { type: 'linear', position: 'left' },
+                yBattery: { type: 'linear', position: 'right', min: 9, max: 14 }
+            }
+        }
+    });
+
+    // 8. Traffic Accumulation
+    chartTraffic = new Chart(document.getElementById('chart-traffic').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{ label: 'Total Traffic (MB)', data: [], borderColor: '#06b6d4', tension: 0.3, fill: true, backgroundColor: 'rgba(6, 182, 212, 0.15)' }]
+        },
+        options: commonOpts
+    });
 }
 
 /**
- * Fetch latest telemetry reading & historical data from Flask API.
+ * Fetch data from local Flask API endpoints.
  */
-async function fetchTelemetryData() {
+async function fetchTelemetry() {
     try {
-        const [resLatest, resHistory] = await Promise.all([
+        const [resLatest, resHist] = await Promise.all([
             fetch('/api/latest').then(r => r.json()),
-            fetch(`/api/history?limit=${MAX_HISTORICAL_POINTS}`).then(r => r.json())
+            fetch(`/api/history?limit=${MAX_HISTORY_POINTS}`).then(r => r.json())
         ]);
 
         if (resLatest.status === 'success' && resLatest.data) {
-            updateDashboardCards(resLatest.data, resLatest.demo_scenario);
+            updateKpiCards(resLatest.data);
             updateAlertsFeed(resLatest.recent_alerts);
         }
 
-        if (resHistory.status === 'success' && resHistory.data) {
-            updateCharts(resHistory.data);
+        if (resHist.status === 'success' && resHist.data) {
+            updateCharts(resHist.data);
         }
-
     } catch (err) {
-        console.error('Error fetching telemetry:', err);
+        console.error('Telemetry fetch error:', err);
     }
 }
 
 /**
- * Update 10 KPI metric cards, status pill, and AI prediction panel.
+ * Update 14 KPI cards, AI panel, hotspot panel, and header status pill.
  */
-function updateDashboardCards(data, demoScenario) {
-    // KPI Updates
-    document.getElementById('kpi-total-traffic').textContent = `${data.total_traffic_mb.toFixed(1)} MB`;
-    document.getElementById('kpi-upload-speed').textContent = `${data.upload_speed.toFixed(1)} KB/s`;
-    document.getElementById('kpi-download-speed').textContent = `${data.download_speed.toFixed(1)} KB/s`;
+function updateKpiCards(data) {
+    // Speeds & Traffic
+    document.getElementById('kpi-upload').textContent = `${data.upload_speed.toFixed(1)} KB/s`;
+    document.getElementById('kpi-download').textContent = `${data.download_speed.toFixed(1)} KB/s`;
+    document.getElementById('kpi-total-traffic').textContent = formatBytes(data.total_network_traffic * 1024 * 1024);
     document.getElementById('kpi-bandwidth').textContent = `${data.bandwidth_utilization.toFixed(1)} %`;
     document.getElementById('kpi-signal').textContent = `${Math.round(data.signal_strength)} %`;
-    document.getElementById('kpi-temperature').textContent = `${data.temperature.toFixed(1)} °C`;
+    document.getElementById('kpi-ssid').textContent = data.ssid || 'N/A';
+    
+    // Network status text
+    const netStatusEl = document.getElementById('kpi-net-status');
+    if (data.wifi_status === 'DISCONNECTED' || data.signal_strength === 0) {
+        netStatusEl.textContent = 'DISCONNECTED';
+        netStatusEl.style.color = '#ef4444';
+    } else {
+        netStatusEl.textContent = data.signal_strength >= 80 ? 'EXCELLENT' : (data.signal_strength >= 60 ? 'GOOD' : 'WEAK');
+        netStatusEl.style.color = '#10b981';
+    }
+
+    // System Health
+    document.getElementById('kpi-cpu').textContent = `${data.cpu_usage.toFixed(1)} %`;
+    document.getElementById('kpi-ram').textContent = `${data.ram_usage.toFixed(1)} %`;
+    
+    document.getElementById('kpi-battery-pct').textContent = data.battery_percentage !== null ? `${data.battery_percentage}%` : 'N/A';
+    document.getElementById('kpi-battery-status').textContent = data.battery_status || 'AC Power';
+
+    const tempEl = document.getElementById('kpi-temp');
+    const tempSourceEl = document.getElementById('kpi-temp-source');
+    if (data.system_temperature !== null) {
+        tempEl.textContent = `${data.system_temperature.toFixed(1)} °C`;
+        tempSourceEl.textContent = data.temperature_source.includes('REAL') ? 'REAL Laptop' : 'SIMULATED';
+    } else {
+        tempEl.textContent = 'Sensor Unavailable';
+        tempSourceEl.textContent = 'OS Unexposed';
+    }
+
+    // Simulated Tower
     document.getElementById('kpi-power').textContent = `${data.power_consumption.toFixed(1)} W`;
-    document.getElementById('kpi-battery').textContent = `${data.battery_voltage.toFixed(2)} V`;
+    document.getElementById('kpi-battery-v').textContent = `${data.battery_voltage.toFixed(2)} V`;
     document.getElementById('kpi-users').textContent = data.connected_users;
     document.getElementById('kpi-load').textContent = `${data.tower_load.toFixed(1)} %`;
 
@@ -256,141 +231,178 @@ function updateDashboardCards(data, demoScenario) {
     const pillText = document.getElementById('global-status-text');
     pill.className = 'status-pill';
 
-    if (data.tower_status === 'CRITICAL') {
+    if (data.overall_status === 'DISCONNECTED') {
+        pill.classList.add('disconnected');
+        pillText.textContent = 'NETWORK DISCONNECTED';
+    } else if (data.overall_status === 'CRITICAL') {
         pill.classList.add('critical');
         pillText.textContent = 'SYSTEM CRITICAL';
-    } else if (data.tower_status === 'WARNING') {
+    } else if (data.overall_status === 'WARNING') {
         pill.classList.add('warning');
         pillText.textContent = 'SYSTEM WARNING';
     } else {
         pillText.textContent = 'SYSTEM NORMAL';
     }
 
-    // AI Prediction Panel Updates
-    document.getElementById('ai-pred-traffic').textContent = `${data.predicted_traffic.toFixed(2)} Mbps`;
+    // AI Prediction Panel
+    document.getElementById('ai-pred-traffic').textContent = `${data.predicted_network_traffic.toFixed(2)} Mbps`;
     
     const riskPct = Math.min(Math.max(data.congestion_risk, 0), 100);
-    const riskBar = document.getElementById('ai-risk-bar');
-    const riskVal = document.getElementById('ai-risk-val');
-    const riskLvl = document.getElementById('ai-risk-level');
-    
-    riskBar.style.width = `${riskPct}%`;
-    riskVal.textContent = `${riskPct.toFixed(1)}%`;
+    document.getElementById('ai-risk-fill').style.width = `${riskPct}%`;
+    document.getElementById('ai-risk-pct').textContent = `${riskPct.toFixed(1)}%`;
 
+    const riskStatusEl = document.getElementById('ai-risk-status');
     if (riskPct >= 80) {
-        riskLvl.textContent = 'CRITICAL CONGESTION RISK';
-        riskLvl.className = 'status-crit';
+        riskStatusEl.textContent = 'CRITICAL CONGESTION RISK';
+        riskStatusEl.className = 'status-crit';
     } else if (riskPct >= 50) {
-        riskLvl.textContent = 'HIGH CONGESTION RISK';
-        riskLvl.className = 'status-warn';
+        riskStatusEl.textContent = 'HIGH CONGESTION RISK';
+        riskStatusEl.className = 'status-warn';
     } else {
-        riskLvl.textContent = 'LOW CONGESTION RISK';
-        riskLvl.className = 'status-norm';
+        riskStatusEl.textContent = 'LOW RISK';
+        riskStatusEl.className = 'status-norm';
     }
 
     const predStatusEl = document.getElementById('ai-pred-status');
     predStatusEl.textContent = data.predicted_status;
-    predStatusEl.className = data.predicted_status === 'CRITICAL' ? 'status-crit' : 
-                            (data.predicted_status === 'WARNING' ? 'status-warn' : 'status-norm');
+    predStatusEl.className = data.predicted_status === 'DISCONNECTED' ? 'status-disc' : 
+                            (data.predicted_status === 'CRITICAL' ? 'status-crit' : 
+                            (data.predicted_status === 'WARNING' ? 'status-warn' : 'status-norm'));
 
-    // Update active scenario badge if changed
-    document.getElementById('active-scenario-name').textContent = demoScenario || 'NORMAL';
+    // Hotspot Panel
+    const hotspotPill = document.getElementById('hotspot-status-pill');
+    hotspotPill.textContent = data.hotspot_status;
+    hotspotPill.className = data.hotspot_status === 'ON' ? 'hotspot-pill on' : 'hotspot-pill';
+
+    document.getElementById('hotspot-interface').textContent = data.hotspot_interface || 'N/A';
+    document.getElementById('hotspot-usage').textContent = `${data.total_network_traffic.toFixed(1)} MB`;
+    document.getElementById('hotspot-notice-text').textContent = data.hotspot_client_details_status;
+
+    // Active scenario tag
+    document.getElementById('active-scenario-name').textContent = data.demo_scenario || 'NORMAL OPERATION';
 }
 
 /**
- * Update active alerts feed log.
+ * Format bytes into human readable scales.
+ */
+function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+/**
+ * Render active alerts feed.
  */
 function updateAlertsFeed(alerts) {
-    const listEl = document.getElementById('alerts-list');
-    const countBadge = document.getElementById('alerts-count');
+    const feedEl = document.getElementById('alerts-feed');
+    const badgeEl = document.getElementById('alerts-count');
 
     if (!alerts || alerts.length === 0) {
-        countBadge.textContent = '0 Alerts';
-        listEl.innerHTML = `
-            <div class="no-alerts-msg">
-                <i class="fa-solid fa-shield-halved"></i>
-                <p>No active anomalies detected. System operating within normal thresholds.</p>
+        badgeEl.textContent = '0 Alerts';
+        feedEl.innerHTML = `
+            <div class="empty-alerts">
+                <p>✅ All monitored parameters operating within normal thresholds.</p>
             </div>
         `;
         return;
     }
 
-    countBadge.textContent = `${alerts.length} Active`;
-    listEl.innerHTML = alerts.map(a => `
-        <div class="alert-item ${a.severity}">
+    badgeEl.textContent = `${alerts.length} Active`;
+    feedEl.innerHTML = alerts.map(a => `
+        <div class="alert-card ${a.severity}">
             <div>
-                <strong style="color: ${a.severity === 'CRITICAL' ? '#ef4444' : '#eab308'}">[${a.severity}]</strong>
-                <span class="alert-msg">${a.message}</span>
+                <strong>[${a.severity}]</strong> ${a.message}
             </div>
-            <span class="alert-time">${a.timestamp.split(' ')[1] || a.timestamp}</span>
+            <span>${a.timestamp.split(' ')[1] || a.timestamp}</span>
         </div>
     `).join('');
 }
 
 /**
- * Push historical data series to Chart.js instances.
+ * Push historical data series to 8 Chart.js instances.
  */
 function updateCharts(history) {
     const labels = history.map(h => h.timestamp ? h.timestamp.split(' ')[1] : '');
 
-    // Speeds
+    // 1. Speeds
     chartSpeeds.data.labels = labels;
     chartSpeeds.data.datasets[0].data = history.map(h => h.upload_speed);
     chartSpeeds.data.datasets[1].data = history.map(h => h.download_speed);
     chartSpeeds.update();
 
-    // Bandwidth
+    // 2. Bandwidth
     chartBandwidth.data.labels = labels;
     chartBandwidth.data.datasets[0].data = history.map(h => h.bandwidth_utilization);
     chartBandwidth.update();
 
-    // Signal
+    // 3. Signal
     chartSignal.data.labels = labels;
     chartSignal.data.datasets[0].data = history.map(h => h.signal_strength);
     chartSignal.update();
 
-    // Temp
+    // 4. System CPU & RAM
+    chartSys.data.labels = labels;
+    chartSys.data.datasets[0].data = history.map(h => h.cpu_usage);
+    chartSys.data.datasets[1].data = history.map(h => h.ram_usage);
+    chartSys.update();
+
+    // 5. Temp
     chartTemp.data.labels = labels;
-    chartTemp.data.datasets[0].data = history.map(h => h.temperature);
+    chartTemp.data.datasets[0].data = history.map(h => h.system_temperature || 0);
     chartTemp.update();
 
-    // Power & Battery
+    // 6. Load & Users
+    chartLoad.data.labels = labels;
+    chartLoad.data.datasets[0].data = history.map(h => h.tower_load);
+    chartLoad.data.datasets[1].data = history.map(h => h.connected_users);
+    chartLoad.update();
+
+    // 7. Power & Battery Voltage
     chartPower.data.labels = labels;
     chartPower.data.datasets[0].data = history.map(h => h.power_consumption);
     chartPower.data.datasets[1].data = history.map(h => h.battery_voltage);
     chartPower.update();
 
-    // Load & Users
-    chartLoad.data.labels = labels;
-    chartLoad.data.datasets[0].data = history.map(h => h.tower_load);
-    chartLoad.data.datasets[1].data = history.map(h => h.connected_users);
-    chartLoad.update();
+    // 8. Total Traffic
+    chartTraffic.data.labels = labels;
+    chartTraffic.data.datasets[0].data = history.map(h => h.total_network_traffic);
+    chartTraffic.update();
 }
 
 /**
- * Trigger Demo Mode Scenario via POST request.
+ * Trigger Demo Scenario via POST /api/demo-mode.
  */
-async function triggerDemoScenario(scenario) {
+async function triggerScenario(scenario) {
     try {
-        const buttons = document.querySelectorAll('.btn-demo');
-        buttons.forEach(btn => btn.classList.remove('active'));
+        const btns = document.querySelectorAll('.btn-scenario');
+        btns.forEach(b => b.classList.remove('active'));
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
-        // Find clicked button and activate
-        event.currentTarget.classList.add('active');
-
-        const res = await fetch('/api/demo-mode', {
+        await fetch('/api/demo-mode', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ scenario })
         });
-        
-        const data = await res.json();
-        if (data.status === 'success') {
-            document.getElementById('active-scenario-name').textContent = scenario;
-            // Immediate refresh
-            fetchTelemetryData();
-        }
-    } catch (err) {
-        console.error('Failed to set demo scenario:', err);
+        fetchTelemetry();
+    } catch (e) {
+        console.error('Failed to trigger scenario:', e);
+    }
+}
+
+/**
+ * Reset Demo Mode and return to live monitoring via POST /api/demo-mode/reset.
+ */
+async function resetDemoMode() {
+    try {
+        const btns = document.querySelectorAll('.btn-scenario');
+        btns.forEach(b => b.classList.remove('active'));
+        document.querySelector('.btn-scenario').classList.add('active');
+
+        await fetch('/api/demo-mode/reset', { method: 'POST' });
+        fetchTelemetry();
+    } catch (e) {
+        console.error('Failed to reset demo mode:', e);
     }
 }

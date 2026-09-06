@@ -1,157 +1,200 @@
 # INTELLIGENT TELECOM TOWER MONITORING AND ALERT SYSTEM
 
-> **ECE Final-Year Project Prototype (Approx. 75% Completion)**  
-> *Software-Integrated Prototype with Real-Time Laptop Data Acquisition & Simulated IoT Sensor Telemetry*
+> **ECE Final-Year Project Prototype (~75% Completion)**  
+> *Laptop-Based Real-Time Network and System Monitoring Prototype with Simulated Telecom Tower Parameters*
 
 ---
 
-## 📌 Project Overview
+## 📌 1. Project Overview
 
-The **Intelligent Telecom Tower Monitoring and Alert System** is a software-hardware integrated framework designed to continuously monitor telecom tower health and network performance, predict network congestion using machine learning, detect abnormal hardware and environment conditions, and trigger instant visual alerts.
-
----
-
-## ⚠️ Important Presentation Context (75% Prototype Status)
-
-This software application represents **approximately 75% completion** of the full final-year project.
-
-- **Real-Time Data Source (Laptop Host)**:
-  - **Network Traffic**: Bytes sent, bytes received, upload speed, download speed, and total traffic via Python `psutil`.
-  - **Bandwidth Utilization (%)**: Derived from live host throughput vs configured maximum network bandwidth.
-  - **Wi-Fi Signal Strength (%)**: Captured dynamically from Windows `netsh wlan show interfaces`.
-
-- **Simulated Hardware Parameters (To Be Replaced by ESP32)**:
-  - **Temperature (°C)**
-  - **Power Consumption (W)**
-  - **Battery Voltage (V)**
-  - **Connected Users & Tower Load (%)**
-
-> *Note: Physical IoT sensors (ESP32 + DHT22 + INA219 + Voltage Sensor) will replace the currently simulated tower parameters during the final 25% hardware integration phase.*
+The **Intelligent Telecom Tower Monitoring and Alert System** is a software-hardware integrated engineering solution designed to continuously monitor telecom tower infrastructure and network telemetry, predict network congestion using Random Forest machine learning models, detect multi-threshold anomalies, and generate instant visual & database alerts.
 
 ---
 
-## 🏗️ System Architecture
+## 🎯 2. Problem Statement & Prototype Description
+
+Telecom tower infrastructure requires 24/7 continuous health monitoring to prevent sudden power outages, hardware thermal failure, bandwidth congestion, and network disconnections.
+
+During the current project evaluation phase prior to ESP32 hardware deployment:
+- **Laptop Environment**: Acts as a **small-scale prototype network node and monitoring server**.
+- **Real-Time Laptop Telemetry**: Collects actual host laptop network traffic, upload/download speeds, bandwidth usage %, Wi-Fi signal %, CPU %, RAM %, battery level, and temperature (where exposed by Windows ACPI/WMI).
+- **Simulated Prototype Data**: Parameters that require physical IoT sensors (Power consumption, Battery voltage, Connected users, Tower load) are dynamically simulated with realistic physical trends and explicitly labeled as **SIMULATED PROTOTYPE DATA**.
+
+> *Note: This project strictly represents a software-integrated prototype (~75% completion). It does NOT falsely claim that the host laptop is a physical cellular tower.*
+
+---
+
+## 🏗️ 3. System Architecture
 
 ```
-Laptop Network Telemetry (psutil & netsh)  +  Simulated ESP32 Sensors
-                                 │
-                                 ▼
-                     Python Data Collector Engine
-                                 │
-                                 ▼
-                          Flask REST API
-                                 │
-                                 ▼
-                     SQLite Time-Series Database
-                                 │
-                                 ▼
-                Machine Learning & Anomaly Engine
-           (Random Forest Forecast + Rule-Based Rules)
-                                 │
-                                 ▼
-                 Real-Time Web Monitoring Dashboard
-               (Chart.js + Dynamic Demo Scenario Switcher)
+                    INTERNET (Optional)
+                            │
+                            ▼
+                LAPTOP NETWORK INTERFACE
+                            │
+            ┌───────────────┴───────────────┐
+            ▼                               ▼
+  REAL-TIME NETWORK DATA           MOBILE HOTSPOT DATA
+  (psutil & netsh wlan)            (Shared Interface Data)
+            │                               │
+            └───────────────┬───────────────┘
+                            ▼
+                   SYSTEM HEALTH DATA
+               (CPU, RAM, Battery, Temp)
+                            │
+                            ▼
+                 PYTHON DATA COLLECTOR
+                            │
+                            ▼
+                      FLASK API
+                            │
+                            ▼
+                 SQLITE TIME-SERIES DB
+                            │
+            ┌───────────────┴───────────────┐
+            ▼                               ▼
+      ML PREDICTION                 ANOMALY DETECTION
+ (Random Forest Forecast)      (Multi-Threshold + Disconnect)
+            │                               │
+            └───────────────┬───────────────┘
+                            ▼
+             REAL-TIME WEB DASHBOARD (100% Offline)
+                            │
+                            ▼
+                     ALERT MANAGEMENT
 ```
 
 ---
 
-## 🚀 Key Features
+## 📊 4. Real Data vs. Simulated Data Breakdown
 
-1. **Real-Time Telemetry Collection**:
-   - Collects live network data from host laptop every 2 seconds.
-   - Extracts exact Wi-Fi signal percentage using Windows Native CLI (`netsh`).
-
-2. **Realistic Sensor Simulation & Trends**:
-   - Generates realistic, non-random physical sensor trends.
-   - Temperature smoothly scales with tower load; power draw dynamically tracks load; battery voltage demonstrates realistic float charging/discharging.
-
-3. **Machine Learning Traffic & Congestion Predictor**:
-   - Random Forest Regressor & Classifier trained on synthetic historical diurnal tower data.
-   - Predicts future network traffic (Mbps), calculates congestion risk percentage, classifies tower status (`NORMAL`, `WARNING`, `CRITICAL`), and computes prediction confidence.
-
-4. **Multi-Threshold Anomaly Detection Engine**:
-   - **Temperature**: Warning (>40°C), Critical (>50°C).
-   - **Battery Voltage**: Warning (<11.5V), Critical (<10.8V).
-   - **Bandwidth Usage**: Warning (>70%), Critical (>90%).
-   - **Wi-Fi Signal**: Warning (<40%), Critical (<20%).
-   - **Power Draw**: Warning (>150W), Critical (>220W).
-   - **Statistical Traffic Spike Detection**: Detects sudden throughput jumps (>2.5x rolling average).
-
-5. **Interactive Demonstration Mode**:
-   - Instant scenario switcher buttons on dashboard:
-     - `Normal Operation`
-     - `High Traffic`
-     - `Network Congestion`
-     - `Weak Signal`
-     - `Thermal Overheat`
-     - `Power Failure`
+| Monitored Parameter | Data Source | Label in Dashboard | Sensor Replacement in Final Phase |
+| :--- | :--- | :--- | :--- |
+| **Bytes Sent & Received** | Host Laptop (`psutil`) | Real-Time Laptop Data | ESP32 Network Gateway |
+| **Upload / Download Speed** | Host Laptop (`psutil`) | Real-Time Laptop Data | Network Gateway Telemetry |
+| **Bandwidth Utilization (%)** | Host Laptop Throughput Formula | Real-Time Laptop Data | Gateway Bandwidth Monitor |
+| **Wi-Fi Signal Strength (%)** | Windows CLI (`netsh wlan`) | Real-Time Laptop Data | ESP32 Wi-Fi Telemetry |
+| **Wi-Fi SSID & Quality** | Windows CLI (`netsh wlan`) | Real-Time Laptop Data | Cellular RSSI Sensor |
+| **CPU & RAM Usage (%)** | Host Laptop (`psutil`) | Prototype Node System Health | ESP32 CPU/RAM Status |
+| **Battery % & Charging** | Host Laptop (`psutil`) | Prototype Node System Health | Battery Management System |
+| **Laptop Temperature (°C)** | Windows WMI / Demo Mode | Host / Demo Temperature | **DHT22 Temperature Sensor** |
+| **Mobile Hotspot Traffic** | Windows Interface Traffic | Real-Time Laptop Data | Shared Tower Telemetry |
+| **Tower Power Draw (W)** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | **INA219 Current/Power Sensor** |
+| **Tower Battery Voltage (V)** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | **Voltage Divider Module** |
+| **Connected Users Count** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | ESP32 Access Point Gateway |
+| **Tower Load (%)** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | Tower Microcontroller |
 
 ---
 
-## 💻 Installation & Run Guide
+## ⚡ 5. Features & Capabilities
 
-### 1. Prerequisites
-- Python 3.9+ installed on Windows
+1. **Real-Time Network & Health Collection**:
+   - Collects live host network telemetry every 2 seconds.
+   - Formats raw data dynamically into human-readable scales (B, KB, MB, GB, Mbps).
+   - Monitors Windows Wi-Fi state, signal percentage (0-100%), and SSID.
 
-### 2. Clone & Setup Workspace
-```bash
-git clone https://github.com/monishav24/Intelligent-Tower-Monitoring-System.git
-cd Intelligent-Tower-Monitoring-System
-```
+2. **100% Local Offline Capability (Zero Internet/CDN Dependencies)**:
+   - Flask web server runs locally on `http://127.0.0.1:5000`.
+   - SQLite time-series database operates 100% offline.
+   - Bundles local Chart.js library under `static/vendor/chart.min.js` so graphs render perfectly without Wi-Fi or internet.
 
-### 3. Create & Activate Virtual Environment
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-```
+3. **Network Disconnection & Auto-Recovery Engine**:
+   - Automatically detects Wi-Fi disconnections without server or dashboard crashes.
+   - Signal drops to 0%, status becomes `DISCONNECTED`, and emits `"CRITICAL: Network Connection Lost"`.
+   - Upon reconnecting, automatically logs `"INFO: Network Connection Restored"` and resumes signal tracking.
 
-### 4. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+4. **Random Forest Machine Learning Engine**:
+   - Trained on 1,000 synthetic diurnal telecom records.
+   - Predicts future network traffic (Mbps), calculates congestion risk %, classifies predicted status (`NORMAL`, `WARNING`, `CRITICAL`, `DISCONNECTED`), and outputs model confidence %.
 
-### 5. Launch Application
-```bash
-python app.py
-```
+5. **Multi-Threshold Anomaly Detection**:
+   - **Bandwidth Utilization**: Warning (≥70%), Critical (≥90%).
+   - **Wi-Fi Signal Strength**: Weak Warning (≤40%), Critical Signal Loss (≤20%), Disconnected (0%).
+   - **Laptop Temperature**: Warning (≥60°C), Critical (≥80°C).
+   - **Battery Voltage**: Warning (≤11.5V), Critical Depletion (≤10.8V).
+   - **Power Consumption**: Warning (≥150W), Critical Surge (≥220W).
+   - **Traffic Spike Detection**: Detects sudden throughput jumps (≥2.5x rolling average).
 
-### 6. Open Web Dashboard
-Navigate to `http://127.0.0.1:5000` in your web browser.
-
----
-
-## 🎯 How to Demonstrate Tomorrow (Evaluator Walkthrough)
-
-1. **Header & Data Source Disclaimer**:
-   - Point out the header banner explicitly clarifying that real network data is collected from your laptop, while tower physical sensors are currently simulated.
-
-2. **Real Laptop Telemetry**:
-   - Open a browser tab and download/stream a file or load a video.
-   - Watch the **Upload Speed**, **Download Speed**, and **Bandwidth Utilization** KPI cards and charts update live on the dashboard!
-
-3. **Demonstrating AI Traffic Prediction**:
-   - Show the **AI Traffic Forecast & Congestion Engine** card. Point out the predicted traffic (Mbps), Congestion Risk %, predicted status, and RF Confidence Score.
-
-4. **Demonstrating Anomaly Detection (Demo Mode Scenarios)**:
-   - Click **`High Traffic`**: Observe connected users increase, tower load rise, and bandwidth usage grow.
-   - Click **`Network Congestion`**: Watch Congestion Risk jump to >90% and trigger a `CRITICAL` alert badge!
-   - Click **`Weak Signal`**: Watch Wi-Fi signal drop to ~18% and trigger a `Weak Signal Warning`.
-   - Click **`Thermal Overheat`**: Temperature surges to ~56°C, triggering a `CRITICAL Thermal Overheating` alert!
-   - Click **`Power Failure`**: Battery voltage drops below 10.8V, triggering a `CRITICAL Power Failure` alert!
-   - Click **`Normal Operation`**: Everything smoothly recovers back to normal.
+6. **Interactive Demonstration Control Panel**:
+   - Instant scenario switcher buttons:
+     - `🟢 Normal Operation`
+     - `📈 High Network Traffic`
+     - `⚠️ Network Congestion`
+     - `📶 Weak Signal`
+     - `🔥 High Temperature`
+     - `⚡ Power Anomaly`
+     - `❌ Network Disconnected`
+     - `🔄 RETURN TO LIVE MONITORING`
 
 ---
 
-## 🔮 Hardware Integration Roadmap (Remaining 25%)
+## 💻 6. Installation & How to Run
 
-The final hardware phase will integrate physical sensors via ESP32 Wi-Fi/MQTT telemetry:
+### Prerequisites
+- Windows 10 or 11
+- Python 3.9, 3.10, 3.11, or 3.12 installed
 
-1. **ESP32 Microcontroller**: Serves as the edge node collecting sensor data and transmitting JSON payloads over HTTP/MQTT to Flask API.
-2. **DHT22 Sensor**: Measures ambient and cabinet temperature (°C) & humidity.
-3. **INA219 I2C Sensor**: Measures DC current and power consumption (W) of the tower power system.
+### Step-by-Step Launch
+1. Open PowerShell and navigate to the project directory:
+   ```powershell
+   cd C:\Users\mv240\.gemini\antigravity-ide\scratch\telecom_tower_monitoring
+   ```
+
+2. Activate the virtual environment:
+   ```powershell
+   .venv\Scripts\activate
+   ```
+
+3. Install required Python packages:
+   ```powershell
+   pip install -r requirements.txt
+   ```
+
+4. Launch the local application server:
+   ```powershell
+   python app.py
+   ```
+
+5. Open your web browser and navigate to:
+   **`http://127.0.0.1:5000`**
+
+---
+
+## 🌐 7. How Offline Mode Works
+
+- **Zero Cloud / CDN Dependencies**: All JS, CSS, and Chart rendering libraries are loaded locally from `static/vendor/chart.min.js`.
+- **Offline Server**: Flask and SQLite run locally on `127.0.0.1`.
+- **Wi-Fi Disconnect Test**: You can turn off Wi-Fi or disconnect from internet completely during evaluation; the dashboard, database, and telemetry loop will continue running seamlessly!
+
+---
+
+## 🎮 8. How Demo Mode Works (Tomorrow's Presentation Guide)
+
+1. **Live Network Demonstration**:
+   - Stream a video or download a file on your laptop. Watch the **Upload Speed**, **Download Speed**, and **Bandwidth Utilization** KPI cards and charts update live!
+
+2. **Network Disconnection Demonstration**:
+   - Turn OFF Wi-Fi on your laptop or click the **`❌ Network Disconnected`** demo button.
+   - The status pill immediately turns grey with **`NETWORK DISCONNECTED`**, signal becomes `0%`, ML status prioritizes **`DISCONNECTED`**, and a critical alert `"CRITICAL: Network Connection Lost"` appears in the alerts feed!
+   - Turn Wi-Fi back ON or click **`🔄 RETURN TO LIVE MONITORING`**; the system auto-recovers and emits `"INFO: Network Connection Restored"`.
+
+3. **Anomaly & AI Forecast Demonstration**:
+   - Click **`📈 High Network Traffic`**: Connected users and tower load rise.
+   - Click **`⚠️ Network Congestion`**: Congestion risk jumps >90%, triggering a `CRITICAL` congestion alert.
+   - Click **`🔥 High Temperature`**: Temperature surges above 80°C, triggering a `CRITICAL Overheating` alert.
+   - Click **`⚡ Power Anomaly`**: Power draw surges to 245W and battery voltage drops to 10.3V, triggering power alerts.
+
+---
+
+## 🔮 9. Hardware Integration Roadmap (Remaining 25%)
+
+The final 25% hardware phase will integrate physical sensors via ESP32 microcontrollers:
+1. **ESP32 Microcontroller**: Edgenode collecting sensor telemetry and transmitting JSON payloads over HTTP/MQTT to Flask API.
+2. **DHT22 Sensor**: Measures ambient temperature (°C) and humidity.
+3. **INA219 I2C Sensor**: Measures DC current and power consumption (W).
 4. **Voltage Divider Module**: Monitors 12V backup battery pack voltage levels in real-time.
 
 ---
 
-## 📄 License
-Project developed for ECE Final-Year Engineering Curriculum.
+## 📄 10. License & Credits
+Developed for ECE Final-Year Engineering Curriculum.
