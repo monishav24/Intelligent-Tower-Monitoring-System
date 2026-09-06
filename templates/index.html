@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Telecom Tower Monitoring & Alert System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Presentation Disclaimer Header Banner -->
+        <div class="disclaimer-banner">
+            <div class="disclaimer-content">
+                <i class="fa-solid fa-microchip disclaimer-icon"></i>
+                <div>
+                    <strong>PROTOTYPE DEMONSTRATION MODE (75% COMPLETION):</strong>
+                    <span>Laptop-based real-time network monitoring with simulated telecom tower hardware sensors. ESP32 + DHT22 + INA219 sensors will integrate in final hardware phase.</span>
+                </div>
+            </div>
+            <div class="banner-badge">ECE FINAL YEAR PROJECT</div>
+        </div>
+
+        <!-- Main Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <div class="logo-box">
+                    <i class="fa-solid fa-tower-cell"></i>
+                </div>
+                <div>
+                    <h1>Intelligent Telecom Tower Monitoring</h1>
+                    <p class="subtitle">Real-time telemetry, AI traffic prediction & anomaly detection</p>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="status-pill" id="global-status-pill">
+                    <span class="pulse-dot"></span>
+                    <span id="global-status-text">SYSTEM NORMAL</span>
+                </div>
+                <div class="clock-box">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="live-clock">--:--:--</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Data Source Indicators -->
+        <section class="data-source-bar">
+            <div class="source-card laptop-source">
+                <div class="source-icon"><i class="fa-solid fa-laptop-code"></i></div>
+                <div class="source-info">
+                    <div class="source-title">REAL-TIME LAPTOP ACQUISITION</div>
+                    <div class="source-tags">
+                        <span class="tag">Network Traffic</span>
+                        <span class="tag">Bandwidth Utilization</span>
+                        <span class="tag">Wi-Fi Signal Strength</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="source-card esp-source">
+                <div class="source-icon"><i class="fa-solid fa-sim-card"></i></div>
+                <div class="source-info">
+                    <div class="source-title">SIMULATED PROTOTYPE DATA <small>(To Be Replaced by ESP32 Sensors)</small></div>
+                    <div class="source-tags">
+                        <span class="tag sim">Temperature</span>
+                        <span class="tag sim">Battery Voltage</span>
+                        <span class="tag sim">Power Consumption</span>
+                        <span class="tag sim">Connected Users</span>
+                        <span class="tag sim">Tower Load</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Demo Mode Scenarios Control Panel -->
+        <section class="demo-panel glass-card">
+            <div class="demo-header">
+                <h3><i class="fa-solid fa-sliders"></i> Demonstration Scenario Switcher</h3>
+                <span class="demo-active-badge">Active: <span id="active-scenario-name">NORMAL</span></span>
+            </div>
+            <div class="demo-buttons">
+                <button class="btn-demo active" onclick="triggerDemoScenario('NORMAL')">
+                    <i class="fa-solid fa-check-circle"></i> Normal Operation
+                </button>
+                <button class="btn-demo" onclick="triggerDemoScenario('HIGH_TRAFFIC')">
+                    <i class="fa-solid fa-chart-line"></i> High Traffic
+                </button>
+                <button class="btn-demo" onclick="triggerDemoScenario('NETWORK_CONGESTION')">
+                    <i class="fa-solid fa-network-wired"></i> Network Congestion
+                </button>
+                <button class="btn-demo" onclick="triggerDemoScenario('WEAK_SIGNAL')">
+                    <i class="fa-solid fa-wifi font-weak"></i> Weak Signal
+                </button>
+                <button class="btn-demo" onclick="triggerDemoScenario('HIGH_TEMPERATURE')">
+                    <i class="fa-solid fa-temperature-high"></i> Thermal Overheat
+                </button>
+                <button class="btn-demo" onclick="triggerDemoScenario('POWER_FAILURE')">
+                    <i class="fa-solid fa-bolt font-danger"></i> Power Failure
+                </button>
+            </div>
+        </section>
+
+        <!-- 10 Live KPI Cards Grid -->
+        <section class="kpi-grid">
+            
+            <!-- Card 1: Network Traffic -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon blue"><i class="fa-solid fa-database"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Total Traffic</span>
+                    <h2 class="kpi-value" id="kpi-total-traffic">0.0 MB</h2>
+                    <span class="kpi-sub badge-real">Host Laptop</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Upload Speed -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon green"><i class="fa-solid fa-upload"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Upload Speed</span>
+                    <h2 class="kpi-value" id="kpi-upload-speed">0.0 KB/s</h2>
+                    <span class="kpi-sub badge-real">Real-time</span>
+                </div>
+            </div>
+
+            <!-- Card 3: Download Speed -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon cyan"><i class="fa-solid fa-download"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Download Speed</span>
+                    <h2 class="kpi-value" id="kpi-download-speed">0.0 KB/s</h2>
+                    <span class="kpi-sub badge-real">Real-time</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Bandwidth Utilization -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon purple"><i class="fa-solid fa-gauge-high"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Bandwidth Usage</span>
+                    <h2 class="kpi-value" id="kpi-bandwidth">0.0 %</h2>
+                    <span class="kpi-sub badge-real">Calculated Throughput</span>
+                </div>
+            </div>
+
+            <!-- Card 5: Wi-Fi Signal Strength -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon orange"><i class="fa-solid fa-wifi"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Wi-Fi Signal</span>
+                    <h2 class="kpi-value" id="kpi-signal">0 %</h2>
+                    <span class="kpi-sub badge-real">netsh wlan</span>
+                </div>
+            </div>
+
+            <!-- Card 6: Temperature -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon red"><i class="fa-solid fa-temperature-three-quarters"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Tower Temp</span>
+                    <h2 class="kpi-value" id="kpi-temperature">0.0 °C</h2>
+                    <span class="kpi-sub badge-sim">ESP32 Sim</span>
+                </div>
+            </div>
+
+            <!-- Card 7: Power Consumption -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon yellow"><i class="fa-solid fa-bolt"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Power Draw</span>
+                    <h2 class="kpi-value" id="kpi-power">0.0 W</h2>
+                    <span class="kpi-sub badge-sim">ESP32 Sim</span>
+                </div>
+            </div>
+
+            <!-- Card 8: Battery Voltage -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon teal"><i class="fa-solid fa-car-battery"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Battery Voltage</span>
+                    <h2 class="kpi-value" id="kpi-battery">0.0 V</h2>
+                    <span class="kpi-sub badge-sim">ESP32 Sim</span>
+                </div>
+            </div>
+
+            <!-- Card 9: Connected Users -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon indigo"><i class="fa-solid fa-users"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Connected Users</span>
+                    <h2 class="kpi-value" id="kpi-users">0</h2>
+                    <span class="kpi-sub badge-sim">Simulated</span>
+                </div>
+            </div>
+
+            <!-- Card 10: Tower Load -->
+            <div class="kpi-card glass-card">
+                <div class="kpi-icon pink"><i class="fa-solid fa-chart-pie"></i></div>
+                <div class="kpi-details">
+                    <span class="kpi-label">Tower Load</span>
+                    <h2 class="kpi-value" id="kpi-load">0.0 %</h2>
+                    <span class="kpi-sub badge-sim">Simulated</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Main Middle Grid: AI Prediction & Alerts -->
+        <div class="middle-grid">
+            
+            <!-- AI Prediction Panel -->
+            <div class="ai-panel glass-card">
+                <div class="panel-header">
+                    <h3><i class="fa-solid fa-brain"></i> AI Traffic Forecast & Congestion Engine</h3>
+                    <span class="ml-tag">Random Forest Model</span>
+                </div>
+                
+                <div class="ai-content">
+                    <div class="ai-stat-box">
+                        <span class="ai-label">Predicted Traffic (Next 10 min)</span>
+                        <div class="ai-main-val" id="ai-pred-traffic">0.00 Mbps</div>
+                    </div>
+
+                    <div class="ai-stat-box">
+                        <span class="ai-label">Congestion Risk</span>
+                        <div class="risk-bar-wrapper">
+                            <div class="risk-bar-fill" id="ai-risk-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="risk-text-flex">
+                            <span id="ai-risk-val">0.0%</span>
+                            <span id="ai-risk-level">LOW RISK</span>
+                        </div>
+                    </div>
+
+                    <div class="ai-row">
+                        <div class="ai-sub-stat">
+                            <span>Predicted Status:</span>
+                            <strong id="ai-pred-status" class="status-norm">NORMAL</strong>
+                        </div>
+                        <div class="ai-sub-stat">
+                            <span>Confidence:</span>
+                            <strong id="ai-confidence">95.0%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Alerts Feed Panel -->
+            <div class="alerts-panel glass-card">
+                <div class="panel-header">
+                    <h3><i class="fa-solid fa-triangle-exclamation"></i> Active Anomaly Alerts</h3>
+                    <span class="alerts-count-badge" id="alerts-count">0 Alerts</span>
+                </div>
+                <div class="alerts-list" id="alerts-list">
+                    <div class="no-alerts-msg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <p>No active anomalies detected. System operating within normal thresholds.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Real-Time Charts Section -->
+        <section class="charts-grid">
+            
+            <!-- Chart 1: Speeds -->
+            <div class="chart-card glass-card">
+                <div class="chart-header">
+                    <h4><i class="fa-solid fa-chart-line"></i> Upload & Download Speeds (KB/s)</h4>
+                    <span class="chart-tag real">Laptop Real-time</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-speeds"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Bandwidth Utilization -->
+            <div class="chart-card glass-card">
+                <div class="chart-header">
+                    <h4><i class="fa-solid fa-gauge"></i> Bandwidth Utilization (%)</h4>
+                    <span class="chart-tag real">Laptop Real-time</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-bandwidth"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Wi-Fi Signal Strength -->
+            <div class="chart-card glass-card">
+                <div class="chart-header">
+                    <h4><i class="fa-solid fa-wifi"></i> Signal Strength (%)</h4>
+                    <span class="chart-tag real">Laptop netsh</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-signal"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Temperature -->
+            <div class="chart-card glass-card">
+                <div class="chart-header">
+                    <h4><i class="fa-solid fa-temperature-arrow-up"></i> Tower Temperature (°C)</h4>
+                    <span class="chart-tag sim">ESP32 Sim</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-temp"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 5: Power Consumption & Battery -->
+            <div class="chart-card glass-card">
+                <div class="chart-header">
+                    <h4><i class="fa-solid fa-bolt"></i> Power (W) & Battery Voltage (V)</h4>
+                    <span class="chart-tag sim">ESP32 Sim</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-power"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 6: Tower Load & Connected Users -->
+            <div class="chart-card glass-card">
+                <div class="chart-header">
+                    <h4><i class="fa-solid fa-users-gear"></i> Tower Load (%) & Users</h4>
+                    <span class="chart-tag sim">Simulated</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-load"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <p>INTELLIGENT TELECOM TOWER MONITORING SYSTEM &copy; 2026 | ECE Final-Year Project Prototype</p>
+        </footer>
+
+    </div>
+
+    <!-- Custom Dashboard JS -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
