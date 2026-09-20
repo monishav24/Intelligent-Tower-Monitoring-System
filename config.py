@@ -12,6 +12,9 @@ DATABASE_PATH = os.path.join(BASE_DIR, "data", "telecom_monitoring.db")
 # Sampling Interval (Seconds)
 COLLECTION_INTERVAL_SECONDS = 2.0
 
+# ESP32 IoT Hardware Settings
+ESP32_TIMEOUT_SECONDS = 6.0
+
 # Network Configuration
 DEFAULT_MAX_BANDWIDTH_MBPS = 100.0  # Configurable prototype capacity
 

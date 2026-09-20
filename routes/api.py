@@ -195,3 +195,50 @@ def reset_demo_mode():
         "status": "success",
         "message": "Returned to LIVE monitoring mode."
     })
+
+@api_bp.route("/api/esp32/telemetry", methods=["POST"])
+def receive_esp32_telemetry():
+    """
+    Receive real hardware telemetry payload from ESP32 IoT node.
+    Accepts JSON with temperature, humidity, voltage, current, power.
+    Returns current system overall status and hardware control instructions (LEDs, Buzzer).
+    """
+    data = request.get_json(silent=True) or {}
+    if not data:
+        return jsonify({"status": "error", "message": "Missing JSON payload"}), 400
+
+    if monitoring_service_instance and hasattr(monitoring_service_instance, "esp32_collector"):
+        success = monitoring_service_instance.esp32_collector.update_telemetry(data)
+        if not success:
+            return jsonify({"status": "error", "message": "Invalid telemetry payload format"}), 400
+
+    snapshot = db.get_latest_snapshot()
+    overall = snapshot.get("overall_status", "NORMAL") if snapshot else "NORMAL"
+
+    # Actuator control flags for ESP32 hardware
+    green_led = (overall == "NORMAL")
+    red_led = (overall in ("WARNING", "CRITICAL", "DISCONNECTED"))
+    buzzer = (overall in ("CRITICAL", "DISCONNECTED"))
+
+    return jsonify({
+        "status": "success",
+        "message": "ESP32 telemetry processed successfully",
+        "overall_status": overall,
+        "control": {
+            "green_led": green_led,
+            "red_led": red_led,
+            "buzzer": buzzer
+        }
+    })
+
+@api_bp.route("/api/esp32/status", methods=["GET"])
+def get_esp32_status():
+    """Retrieve ESP32 IoT hardware node connectivity and latest sensor metrics."""
+    if monitoring_service_instance and hasattr(monitoring_service_instance, "esp32_collector"):
+        telemetry = monitoring_service_instance.esp32_collector.get_telemetry()
+        return jsonify({
+            "status": "success",
+            "esp32_online": telemetry["is_online"],
+            "data": telemetry
+        })
+    return jsonify({"status": "error", "message": "Monitoring service not initialized"}), 500

@@ -198,6 +198,18 @@ function updateKpiCards(data) {
     hotspotBadge.textContent = hotspotState;
     hotspotBadge.className = hotspotState === 'ACTIVE' ? 'status-badge active' : 'status-badge inactive';
 
+    const esp32Badge = document.getElementById('status-esp32');
+    if (esp32Badge) {
+        const isEsp32Online = Boolean(data.esp32_online);
+        if (isEsp32Online) {
+            esp32Badge.textContent = 'ONLINE (REAL HARDWARE)';
+            esp32Badge.className = 'status-badge online';
+        } else {
+            esp32Badge.textContent = 'OFFLINE (SIMULATED FALLBACK)';
+            esp32Badge.className = 'status-badge offline';
+        }
+    }
+
     const overallBadge = document.getElementById('status-overall');
     const overallState = data.overall_status || 'NORMAL';
     overallBadge.textContent = overallState;

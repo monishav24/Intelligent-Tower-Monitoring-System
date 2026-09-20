@@ -20,6 +20,7 @@ from collector.temperature_collector import TemperatureCollector
 from collector.hotspot_clients import get_connected_hotspot_clients
 from collector.internet_checker import check_internet_connectivity
 from collector.simulated_tower import SimulatedTowerCollector
+from collector.esp32_collector import ESP32Collector
 from ml.predictor import NetworkPredictor
 from services.anomaly_detection import AnomalyDetector
 from services.alert_service import AlertService
@@ -29,6 +30,7 @@ class MonitoringService:
         self.net_collector = NetworkCollector()
         self.temp_collector = TemperatureCollector()
         self.sim_collector = SimulatedTowerCollector()
+        self.esp32_collector = ESP32Collector()
         self.predictor = NetworkPredictor()
         self.anomaly_detector = AnomalyDetector()
         self.alert_service = AlertService()
@@ -111,13 +113,34 @@ class MonitoringService:
                 # 5. Real Laptop System Health Data
                 sys_health = get_system_health()
 
-                # 6. Laptop Temperature Data
+                # 6. Laptop Temperature Data (Fallback)
                 temp_data = self.temp_collector.get_temperature()
                 sys_health["system_temperature"] = temp_data["temperature"]
                 sys_health["temperature_source"] = temp_data["source"]
 
                 # 7. Simulated Tower Sensors (Tied to real hotspot device count + throughput + active scenario)
                 sim_data = self.sim_collector.get_metrics(net_data, real_client_count, self.demo_scenario)
+
+                # 8. Real ESP32 IoT Hardware Telemetry Check & Fallback
+                esp32_telemetry = self.esp32_collector.get_telemetry()
+                is_esp32_online = esp32_telemetry.get("is_online", False)
+
+                if is_esp32_online:
+                    # ESP32 ONLINE: Use real hardware sensor values
+                    if esp32_telemetry.get("temperature") is not None:
+                        sys_health["system_temperature"] = esp32_telemetry["temperature"]
+                        sys_health["temperature_source"] = "ESP32 DHT22 Temperature Sensor"
+                    
+                    power_val = esp32_telemetry.get("power_w") if esp32_telemetry.get("power_w") is not None else sim_data["power_consumption"]
+                    voltage_val = esp32_telemetry.get("voltage") if esp32_telemetry.get("voltage") is not None else sim_data["battery_voltage"]
+                    humidity_val = esp32_telemetry.get("humidity")
+                    data_source_str = "ESP32 IoT Hardware Node"
+                else:
+                    # ESP32 OFFLINE: Fallback to simulated prototype data
+                    power_val = sim_data["power_consumption"]
+                    voltage_val = sim_data["battery_voltage"]
+                    humidity_val = None
+                    data_source_str = "Laptop Real-Time + Simulated Sensors"
 
                 # Combined Snapshot Object
                 snapshot = {
@@ -139,13 +162,15 @@ class MonitoringService:
                     "battery_status": sys_health["battery_status"],
                     "system_temperature": sys_health["system_temperature"],
                     "temperature_source": sys_health["temperature_source"],
-                    "power_consumption": sim_data["power_consumption"],
-                    "battery_voltage": sim_data["battery_voltage"],
+                    "power_consumption": power_val,
+                    "battery_voltage": voltage_val,
+                    "humidity": humidity_val,
                     "connected_client_count": sim_data["connected_hotspot_devices"],
                     "client_ip_list": hotspot_client_data["client_ip_list"],
                     "client_details": hotspot_client_data["client_details"],
                     "tower_load": sim_data["tower_load"],
-                    "data_source": "Laptop Real-Time + Simulated Sensors",
+                    "data_source": data_source_str,
+                    "esp32_online": 1 if is_esp32_online else 0,
                     "is_demo_mode": 1 if self.is_demo_mode else 0,
                     "demo_scenario": self.demo_scenario,
                     "hotspot_status": hotspot_client_data["hotspot_active"],

@@ -301,6 +301,7 @@ def get_latest_snapshot():
         "battery_status": sh.get("battery_status", "N/A"),
         "system_temperature": raw_temp,
         "temperature_source": sh.get("temperature_source", "Simulated Tower DHT22"),
+        "humidity": sh.get("humidity"),
 
         "power_consumption": st.get("power_consumption", 0.0),
         "battery_voltage": st.get("battery_voltage", 0.0),
@@ -311,6 +312,7 @@ def get_latest_snapshot():
         "overall_status": ss.get("overall_status", "NORMAL"),
         "anomaly_status": ss.get("anomaly_status", "NORMAL"),
         "data_source": ss.get("data_source", "Laptop Hybrid Node"),
+        "esp32_online": 1 if "ESP32" in str(ss.get("data_source", "")) else 0,
         "is_demo_mode": bool(ss.get("is_demo_mode", 0)),
         "demo_scenario": ss.get("demo_scenario", "NORMAL"),
 
