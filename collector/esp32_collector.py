@@ -159,5 +159,5 @@ class ESP32Collector:
                 "current_ma": self.current_ma,
                 "power_w": self.power_w,
                 "analog_voltage": self.analog_voltage,
-                "source": "ESP32 Hardware Node" if online else "Simulated Fallback"
+                "source": "ESP32 IoT Hardware" if online else "Host Laptop"
             }

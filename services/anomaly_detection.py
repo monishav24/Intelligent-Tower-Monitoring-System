@@ -215,5 +215,52 @@ class AnomalyDetector:
             overall_status = "NORMAL"
 
         anomaly_status = "ANOMALY_DETECTED" if len(alerts) > 0 else "NORMAL"
+        detected_scenario = self.classify_scenario(reading, alerts)
 
-        return overall_status, anomaly_status, alerts
+        return overall_status, anomaly_status, alerts, detected_scenario
+
+    def classify_scenario(self, reading, alerts):
+        """
+        Automatically determine current active scenario from telemetry reading and alerts.
+        Enforces priority mechanism:
+        NETWORK_DISCONNECTED > POWER_ANOMALY > HIGH_TEMPERATURE > NETWORK_CONGESTION > HIGH_TRAFFIC > WEAK_SIGNAL > NORMAL
+        """
+        wifi_status = reading.get("wifi_status", "CONNECTED").upper()
+        internet_status = reading.get("internet_status", "ONLINE").upper()
+        signal = reading.get("signal_strength", 80.0)
+        bw_util = reading.get("bandwidth_utilization", 0.0)
+        temp = reading.get("system_temperature")
+        battery_v = reading.get("battery_voltage", 12.5)
+        power_w = reading.get("power_consumption", 120.0)
+        client_count = reading.get("connected_client_count", 0)
+
+        th = config.THRESHOLDS
+
+        # Priority 1: NETWORK_DISCONNECTED
+        if wifi_status == "DISCONNECTED" or signal == 0.0 or internet_status == "OFFLINE":
+            return "NETWORK_DISCONNECTED"
+
+        # Priority 2: POWER_ANOMALY
+        if battery_v <= th["battery_voltage"]["warning"] or power_w >= th["power_consumption"]["warning"]:
+            return "POWER_ANOMALY"
+
+        # Priority 3: HIGH_TEMPERATURE
+        if temp is not None and temp >= th["temperature"]["warning"]:
+            return "HIGH_TEMPERATURE"
+
+        # Priority 4: NETWORK_CONGESTION
+        if bw_util >= th["bandwidth_utilization"]["critical"]:
+            return "NETWORK_CONGESTION"
+
+        # Priority 5: HIGH_TRAFFIC
+        has_traffic_spike = any("Traffic Spike" in a.get("parameter", "") for a in alerts)
+        if bw_util >= th["bandwidth_utilization"]["warning"] or client_count >= 15 or has_traffic_spike:
+            return "HIGH_TRAFFIC"
+
+        # Priority 6: WEAK_SIGNAL
+        if signal <= th["signal_strength"]["weak"] and signal > 0:
+            return "WEAK_SIGNAL"
+
+        # Priority 7: NORMAL
+        return "NORMAL"
+

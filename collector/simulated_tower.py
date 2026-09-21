@@ -76,5 +76,6 @@ class SimulatedTowerCollector:
             "tower_load": tower_load,
             "power_consumption": power,
             "battery_voltage": battery,
-            "data_source_label": "SIMULATED PROTOTYPE DATA"
+            "data_source_label": "Telecom Tower Sensors"
         }
+

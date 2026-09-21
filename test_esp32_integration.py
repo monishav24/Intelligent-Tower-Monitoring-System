@@ -59,7 +59,6 @@ def test_esp32():
     print("  => ESP32 Telemetry POST PASSED\n")
 
     # 3. Verify State Switching to ONLINE
-    time.sleep(1.0)
     print("[TEST 3] Fetching GET /api/esp32/status after POST...")
     status2 = get_json("/api/esp32/status")
     print(f"  - ESP32 Online: {status2.get('esp32_online')}")
@@ -69,7 +68,12 @@ def test_esp32():
     assert status2.get('esp32_online') == True, "ESP32 status should be True (ONLINE) after POST!"
     print("  => State Switch to ONLINE VERIFIED\n")
 
+    # Wait for background monitoring daemon tick (2.0s interval)
+    print("  Waiting 2.5s for background monitoring service tick...")
+    time.sleep(2.5)
+
     # 4. Verify Telemetry Integration in GET /api/latest
+
     print("[TEST 4] Fetching GET /api/latest snapshot...")
     latest = get_json("/api/latest").get("data", {})
     print(f"  - Data Source: {latest.get('data_source')}")

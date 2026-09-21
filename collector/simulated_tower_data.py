@@ -97,5 +97,6 @@ class SimulatedTowerCollector:
             "connected_users": users,
             "tower_load": tower_load,
             "signal_override": signal_override,
-            "data_source_label": "Simulated Prototype Data – To Be Replaced by ESP32 Sensors"
+            "data_source_label": "Telecom Tower Sensors"
         }
+

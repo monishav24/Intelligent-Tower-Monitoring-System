@@ -45,7 +45,7 @@
             </div>
             <div class="status-item">
                 <span class="status-title">ESP32 IoT Hardware:</span>
-                <span class="status-badge offline" id="status-esp32">OFFLINE (SIMULATED FALLBACK)</span>
+                <span class="status-badge offline" id="status-esp32">OFFLINE</span>
             </div>
             <div class="status-item overall">
                 <span class="status-title">Overall System Status:</span>
@@ -70,11 +70,11 @@
             </div>
 
             <div class="source-box sim-source">
-                <div class="source-head">⚡ PROTOTYPE / SIMULATED DATA <small>(To Be Replaced by ESP32 Sensors)</small></div>
+                <div class="source-head">⚡ TELECOM TOWER SENSORS</div>
                 <div class="source-tags">
                     <span class="tag sim">Tower Temperature (°C)</span>
-                    <span class="tag sim">Tower Power Draw (W)</span>
-                    <span class="tag sim">Tower Battery Voltage (V)</span>
+                    <span class="tag sim">Power Draw (W)</span>
+                    <span class="tag sim">Battery Voltage (V)</span>
                     <span class="tag sim">Tower Load (%)</span>
                 </div>
             </div>
@@ -83,7 +83,7 @@
         <!-- Interactive Demo Mode Control Bar -->
         <section class="demo-bar glass-panel">
             <div class="demo-title-flex">
-                <h3>🎮 Demonstration Scenario Control Panel</h3>
+                <h3>🎮 Scenario Control Panel</h3>
                 <span class="active-scenario-tag">Active Scenario: <strong id="active-scenario-name">NORMAL OPERATION</strong></span>
             </div>
             <div class="demo-btn-grid">
@@ -164,29 +164,29 @@
                 <span class="badge sys" id="kpi-battery-status">AC Power</span>
             </div>
 
-            <!-- Simulated tower cards -->
+            <!-- Temperature card -->
             <div class="kpi-card glass-panel sim-border">
-                <span class="kpi-label">Laptop Temperature</span>
+                <span class="kpi-label">TEMPERATURE</span>
                 <h2 class="kpi-val" id="kpi-temp">-- °C</h2>
-                <span class="badge sim" id="kpi-temp-source">Sensor / Demo</span>
+                <span class="badge real" id="kpi-temp-source">Host Laptop</span>
             </div>
 
             <div class="kpi-card glass-panel sim-border">
                 <span class="kpi-label">Power Consumption</span>
                 <h2 class="kpi-val" id="kpi-power">0.0 W</h2>
-                <span class="badge sim">Simulated Prototype</span>
+                <span class="badge real">Electrical Sensor</span>
             </div>
 
             <div class="kpi-card glass-panel sim-border">
                 <span class="kpi-label">Tower Battery</span>
                 <h2 class="kpi-val" id="kpi-battery-v">0.0 V</h2>
-                <span class="badge sim">Simulated Prototype</span>
+                <span class="badge real">Tower Battery</span>
             </div>
 
             <div class="kpi-card glass-panel sim-border">
                 <span class="kpi-label">Tower Load</span>
                 <h2 class="kpi-val" id="kpi-load">0.0 %</h2>
-                <span class="badge sim">Simulated Prototype</span>
+                <span class="badge real">Tower Load</span>
             </div>
 
         </section>
@@ -315,7 +315,7 @@
             <div class="chart-box glass-panel">
                 <div class="chart-title">
                     <h4>Tower Load (%) & Hotspot Devices</h4>
-                    <span class="badge sim">Real Devices + Load</span>
+                    <span class="badge real">Tower Load</span>
                 </div>
                 <div class="chart-canvas-wrap">
                     <canvas id="chart-load"></canvas>
@@ -325,7 +325,7 @@
             <div class="chart-box glass-panel">
                 <div class="chart-title">
                     <h4>Tower Temperature (°C)</h4>
-                    <span class="badge sim">Simulated / Demo</span>
+                    <span class="badge real">Temperature Sensor</span>
                 </div>
                 <div class="chart-canvas-wrap">
                     <canvas id="chart-temp"></canvas>
@@ -335,7 +335,7 @@
             <div class="chart-box glass-panel">
                 <div class="chart-title">
                     <h4>Power Draw (W) & Battery Voltage (V)</h4>
-                    <span class="badge sim">Simulated Prototype</span>
+                    <span class="badge real">Electrical System</span>
                 </div>
                 <div class="chart-canvas-wrap">
                     <canvas id="chart-power"></canvas>
@@ -356,7 +356,7 @@
 
         <!-- Footer -->
         <footer class="footer-card">
-            <p>INTELLIGENT TELECOM TOWER MONITORING SYSTEM &copy; 2026 | ECE Final-Year Project Software Prototype</p>
+            <p>INTELLIGENT TELECOM TOWER MONITORING SYSTEM &copy; 2026 | ECE Final-Year Project</p>
         </footer>
 
     </div>

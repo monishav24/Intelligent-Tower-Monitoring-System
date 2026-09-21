@@ -30,11 +30,12 @@ def run_tests():
     print(f"  - Local Monitoring Status: ACTIVE")
     print(f"  - Hotspot Status: {data.get('hotspot_status')}")
     print(f"  - Connected Hotspot Devices Count: {data.get('connected_client_count')}")
-    print(f"  - Client IPs: {data.get('client_ip_list')}")
+    print(f"  - Active Scenario (Auto-detected): {data.get('active_scenario')}")
     print(f"  - Download Speed: {data.get('download_speed')} KB/s")
-    print(f"  - Tower Temp (Simulated): {data.get('system_temperature')} C")
+    print(f"  - Temperature: {data.get('system_temperature')} °C")
     assert 'internet_status' in data, "internet_status missing!"
     assert 'connected_client_count' in data, "connected_client_count missing!"
+    assert 'active_scenario' in data, "active_scenario missing!"
     print("  => /api/latest PASSED\n")
 
     # 2. Hotspot Endpoint Verification
@@ -57,34 +58,44 @@ def run_tests():
     assert status_info.get('local_monitoring_status') == 'ACTIVE', "Local monitoring status should be ACTIVE!"
     print("  => /api/status PASSED\n")
 
-    # 4. Demo Scenarios Test (G, H, I, J, and Network Disconnected)
+    # 4. Demo Scenarios & Manual Overrides Test (All 7 Scenarios)
     demos = [
-        ("HIGH_TRAFFIC", "G. Demo high traffic"),
-        ("WEAK_SIGNAL", "H. Demo weak signal"),
-        ("HIGH_TEMPERATURE", "I. Demo thermal anomaly"),
-        ("POWER_ANOMALY", "J. Demo power anomaly"),
-        ("NETWORK_DISCONNECTED", "D & E. Demo network disconnected")
+        ("NORMAL", "Normal operation"),
+        ("HIGH_TRAFFIC", "High traffic"),
+        ("NETWORK_CONGESTION", "Network congestion"),
+        ("WEAK_SIGNAL", "Weak signal"),
+        ("HIGH_TEMPERATURE", "Thermal anomaly"),
+        ("POWER_ANOMALY", "Power anomaly"),
+        ("NETWORK_DISCONNECTED", "Network disconnected")
     ]
 
     for scenario_id, desc in demos:
-        print(f"[TEST DEMO] Triggering {desc} ({scenario_id})...")
+        print(f"[TEST OVERRIDE] Triggering manual test override for {desc} ({scenario_id})...")
         res = post_json("/api/demo-mode", {"scenario": scenario_id})
         print(f"  - API Response: {res.get('message')}")
-        time.sleep(1.5)
+        time.sleep(3.0)
         
         # Verify active alerts and snapshot
         alerts = get_json("/api/alerts")
         latest = get_json("/api/latest").get("data", {})
-        print(f"  - Current Internet Status: {latest.get('internet_status')}")
+        print(f"  - Active Scenario: {latest.get('active_scenario')}")
+        print(f"  - Manual Override Flag: {latest.get('is_manual_override')}")
         print(f"  - Active Alerts Count: {alerts.get('count')}")
-        for a in alerts.get('alerts', [])[:2]:
-            print(f"    * Alert: [{a.get('severity')}] {a.get('metric')} - {a.get('message')}")
-        print(f"  => {desc} VERIFIED\n")
+        assert latest.get('active_scenario') == scenario_id, f"Active scenario should be {scenario_id}, got {latest.get('active_scenario')}!"
+        print(f"  => {desc} OVERRIDE VERIFIED\n")
 
-    # Reset demo mode
-    print("[RESET] Resetting Demo Mode back to LIVE monitoring...")
+    # Reset demo mode & verify return to automatic live detection
+    print("[RESET] Resetting Manual Override back to LIVE monitoring...")
     res = post_json("/api/demo-mode/reset", {})
-    print(f"  - Reset Response: {res.get('message')}\n")
+    print(f"  - Reset Response: {res.get('message')}")
+    time.sleep(3.0)
+
+
+    latest_auto = get_json("/api/latest").get("data", {})
+    print(f"  - Auto-detected Scenario: {latest_auto.get('active_scenario')}")
+    print(f"  - Manual Override Flag: {latest_auto.get('is_manual_override')}")
+    assert latest_auto.get('is_manual_override') == 0, "Manual override flag should be 0 after reset!"
+    print("  => Automatic Live Monitoring Return VERIFIED\n")
 
     # 5. ML Prediction Endpoint
     print("[TEST 5] Testing /api/prediction ML forecast...")
@@ -101,3 +112,4 @@ def run_tests():
 
 if __name__ == "__main__":
     run_tests()
+

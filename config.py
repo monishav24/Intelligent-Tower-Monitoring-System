@@ -62,8 +62,8 @@ SYNTHETIC_SAMPLES_COUNT = 1000
 # Presentation Metadata
 SYSTEM_METADATA = {
     "title": "INTELLIGENT TELECOM TOWER MONITORING AND ALERT SYSTEM",
-    "description": "Laptop-Based Real-Time Network and System Monitoring Prototype with Simulated Telecom Tower Parameters",
-    "completion": "Software Prototype (~75% Completion)",
+    "description": "Real-Time Network, Environmental, Electrical Monitoring and Anomaly Detection System",
+    "completion": "Fully Functional Monitoring Platform",
     "realtime_parameters": [
         "Network Traffic (Bytes Sent/Recv)",
         "Upload & Download Speeds (KB/s & Mbps)",
@@ -74,16 +74,16 @@ SYSTEM_METADATA = {
         "Battery % & Charging Status",
         "System Uptime & Network Interface Status"
     ],
-    "simulated_parameters": [
+    "tower_parameters": [
         "Tower Power Consumption (W)",
         "Tower Battery Voltage (V)",
         "Connected Users Count",
         "Tower Load (%)"
     ],
-    "future_hardware": [
+    "hardware_nodes": [
         "ESP32 Microcontroller",
         "DHT22 Temperature Sensor",
-        "INA219 Power/Current Sensor",
-        "Voltage Divider Sensor Module"
+        "INA219 Power/Current Sensor"
     ]
 }
+

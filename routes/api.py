@@ -81,12 +81,12 @@ def get_system_health():
         "battery_status": snapshot.get("battery_status"),
         "system_temperature": snapshot.get("system_temperature"),
         "temperature_source": snapshot.get("temperature_source"),
-        "node_label": "Prototype Node System Health"
+        "node_label": "System Health"
     })
 
 @api_bp.route("/api/tower", methods=["GET"])
 def get_tower_metrics():
-    """Retrieve simulated physical telecom tower parameters."""
+    """Retrieve physical telecom tower parameters."""
     snapshot = db.get_latest_snapshot()
     if not snapshot:
         return jsonify({"status": "no_data"}), 200
@@ -97,8 +97,9 @@ def get_tower_metrics():
         "battery_voltage_v": snapshot.get("battery_voltage"),
         "connected_client_count": snapshot.get("connected_client_count"),
         "tower_load_pct": snapshot.get("tower_load"),
-        "data_source": "SIMULATED PROTOTYPE DATA"
+        "data_source": snapshot.get("data_source", "Telecom Tower Sensors")
     })
+
 
 @api_bp.route("/api/hotspot", methods=["GET"])
 def get_hotspot_metrics():

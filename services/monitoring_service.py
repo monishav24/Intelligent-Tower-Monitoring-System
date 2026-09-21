@@ -43,12 +43,13 @@ class MonitoringService:
     def set_demo_scenario(self, scenario):
         """Switch demonstration scenario override."""
         sc = scenario.upper()
-        if sc == "NORMAL" or sc == "RESET":
+        if sc == "RESET":
             self.reset_demo_mode()
             return
 
         self.demo_scenario = sc
         self.is_demo_mode = True
+        self.sim_collector.battery_voltage = 12.60
 
         if sc == "HIGH_TEMPERATURE":
             self.temp_collector.enable_demo_temperature("CRITICAL")
@@ -64,7 +65,9 @@ class MonitoringService:
         self.demo_scenario = "NORMAL"
         self.is_demo_mode = False
         self.temp_collector.disable_demo_temperature()
+        self.sim_collector.battery_voltage = 12.60
         print("[Monitoring Service] Returned to LIVE monitoring mode.")
+
 
     def set_max_bandwidth(self, mbps):
         """Update maximum bandwidth threshold."""
@@ -129,18 +132,20 @@ class MonitoringService:
                     # ESP32 ONLINE: Use real hardware sensor values
                     if esp32_telemetry.get("temperature") is not None:
                         sys_health["system_temperature"] = esp32_telemetry["temperature"]
-                        sys_health["temperature_source"] = "ESP32 DHT22 Temperature Sensor"
+                        sys_health["temperature_source"] = "ESP32 IoT Hardware"
                     
                     power_val = esp32_telemetry.get("power_w") if esp32_telemetry.get("power_w") is not None else sim_data["power_consumption"]
                     voltage_val = esp32_telemetry.get("voltage") if esp32_telemetry.get("voltage") is not None else sim_data["battery_voltage"]
                     humidity_val = esp32_telemetry.get("humidity")
-                    data_source_str = "ESP32 IoT Hardware Node"
+                    data_source_str = "ESP32 IoT Hardware"
                 else:
-                    # ESP32 OFFLINE: Fallback to simulated prototype data
+                    # ESP32 OFFLINE: Fallback to host laptop and tower sensors
                     power_val = sim_data["power_consumption"]
                     voltage_val = sim_data["battery_voltage"]
                     humidity_val = None
-                    data_source_str = "Laptop Real-Time + Simulated Sensors"
+                    data_source_str = "Host Laptop"
+                    if not sys_health.get("temperature_source") or "Unavailable" in sys_health.get("temperature_source", ""):
+                        sys_health["temperature_source"] = "Host Laptop"
 
                 # Combined Snapshot Object
                 snapshot = {
@@ -172,6 +177,7 @@ class MonitoringService:
                     "data_source": data_source_str,
                     "esp32_online": 1 if is_esp32_online else 0,
                     "is_demo_mode": 1 if self.is_demo_mode else 0,
+                    "is_manual_override": 1 if self.is_demo_mode else 0,
                     "demo_scenario": self.demo_scenario,
                     "hotspot_status": hotspot_client_data["hotspot_active"],
                     "hotspot_interface": "Windows Hotspot Interface",
@@ -179,10 +185,21 @@ class MonitoringService:
                     "connection_status": hotspot_client_data["connection_status"]
                 }
 
-                # 8. Evaluate Anomaly Rules & Overall Priority Status
-                overall_status, anomaly_status, active_alerts = self.anomaly_detector.evaluate(snapshot)
+                # 8. Evaluate Anomaly Rules & Automatic Scenario Classification
+                overall_status, anomaly_status, active_alerts, detected_scenario = self.anomaly_detector.evaluate(snapshot)
+                
+                # If manual override is NOT active, automatically set active scenario from real-time analysis
+                if not self.is_demo_mode:
+                    active_scenario = detected_scenario
+                    self.demo_scenario = detected_scenario
+                else:
+                    active_scenario = self.demo_scenario
+
                 snapshot["overall_status"] = overall_status
                 snapshot["anomaly_status"] = anomaly_status
+                snapshot["active_scenario"] = active_scenario
+                snapshot["demo_scenario"] = active_scenario
+
 
                 # 9. ML Traffic Prediction Engine
                 predictions = self.predictor.predict(snapshot)

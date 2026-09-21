@@ -202,10 +202,10 @@ function updateKpiCards(data) {
     if (esp32Badge) {
         const isEsp32Online = Boolean(data.esp32_online);
         if (isEsp32Online) {
-            esp32Badge.textContent = 'ONLINE (REAL HARDWARE)';
+            esp32Badge.textContent = 'ONLINE';
             esp32Badge.className = 'status-badge online';
         } else {
-            esp32Badge.textContent = 'OFFLINE (SIMULATED FALLBACK)';
+            esp32Badge.textContent = 'OFFLINE';
             esp32Badge.className = 'status-badge offline';
         }
     }
@@ -265,10 +265,10 @@ function updateKpiCards(data) {
     const tempSourceEl = document.getElementById('kpi-temp-source');
     if (data.system_temperature !== null) {
         tempEl.textContent = `${data.system_temperature.toFixed(1)} °C`;
-        tempSourceEl.textContent = data.temperature_source.includes('REAL') ? 'REAL Laptop' : 'Simulated / Demo';
+        tempSourceEl.textContent = data.temperature_source || 'Host Laptop';
     } else {
         tempEl.textContent = 'Sensor Unavailable';
-        tempSourceEl.textContent = 'OS Unexposed';
+        tempSourceEl.textContent = 'Host Laptop';
     }
 
     // Simulated Tower
@@ -301,8 +301,20 @@ function updateKpiCards(data) {
                             (data.predicted_status === 'CRITICAL' ? 'status-crit' : 
                             (data.predicted_status === 'WARNING' ? 'status-warn' : 'status-norm'));
 
-    // Active scenario tag
-    document.getElementById('active-scenario-name').textContent = data.demo_scenario || 'NORMAL OPERATION';
+    // Active scenario tag & button highlight
+    const activeSc = data.active_scenario || data.demo_scenario || 'NORMAL';
+    document.getElementById('active-scenario-name').textContent = activeSc.replace('_', ' ');
+
+    const btns = document.querySelectorAll('.btn-scenario');
+    btns.forEach(b => {
+        const onClickAttr = b.getAttribute('onclick') || '';
+        if (onClickAttr.includes(`'${activeSc}'`)) {
+            b.classList.add('active');
+        } else if (!onClickAttr.includes('resetDemoMode')) {
+            b.classList.remove('active');
+        }
+    });
+
 }
 
 /**
