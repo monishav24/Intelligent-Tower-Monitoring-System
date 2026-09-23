@@ -1,19 +1,28 @@
 /**
  * Intelligent Telecom Tower Monitoring Dashboard JavaScript
  * 100% Offline-First Execution, Real-Time Polling, Local Chart.js Graphs & Demo Mode Controls
+ * Includes Live 3-Algorithm ML Comparison Module (Random Forest vs Gradient Boosting vs XGBoost)
  */
 
 let chartSpeeds, chartBandwidth, chartSignal, chartSys, chartTemp, chartLoad, chartPower, chartTraffic;
+let chartInputNetwork, chartInputSystem;
+let chartRfPred, chartGbPred, chartXgbPred, chartCmpRmse, chartCmpR2;
 
 const MAX_HISTORY_POINTS = 25;
 
 document.addEventListener('DOMContentLoaded', () => {
     startClock();
     initOfflineCharts();
-    fetchTelemetry();
+    initComparisonCharts();
     
-    // Poll local REST API every 2 seconds
+    fetchTelemetry();
+    fetchAlgorithmComparison();
+    
+    // Poll telemetry API every 2 seconds
     setInterval(fetchTelemetry, 2000);
+
+    // Poll cached ML Comparison API every 5 seconds (Never triggers retraining)
+    setInterval(fetchAlgorithmComparison, 5000);
 });
 
 /**
@@ -30,7 +39,7 @@ function startClock() {
 }
 
 /**
- * Initialize 8 Chart.js multi-series graphs using local vendor library.
+ * Initialize 8 telemetry Chart.js multi-series graphs using local vendor library.
  */
 function initOfflineCharts() {
     Chart.defaults.color = '#94a3b8';
@@ -159,7 +168,162 @@ function initOfflineCharts() {
 }
 
 /**
- * Fetch data from local Flask API endpoints.
+ * Initialize Comparison Module Chart.js instances (2 Live Input Time-Series + 3 Predictions + 2 Comparison Bar Charts).
+ */
+function initComparisonCharts() {
+    const lineOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: {
+            legend: { position: 'top', labels: { boxWidth: 10, padding: 8 } },
+            tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
+            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+        }
+    };
+
+    // Live Input Graph 1: Network Telemetry Used by ML Models
+    const ctxInNet = document.getElementById('chart-input-network');
+    if (ctxInNet) {
+        chartInputNetwork = new Chart(ctxInNet.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Upload Speed (KB/s)', data: [], borderColor: '#10b981', tension: 0.2 },
+                    { label: 'Download Speed (KB/s)', data: [], borderColor: '#06b6d4', tension: 0.2 },
+                    { label: 'Bandwidth Utilization (%)', data: [], borderColor: '#8b5cf6', tension: 0.2 }
+                ]
+            },
+            options: lineOpts
+        });
+    }
+
+    // Live Input Graph 2: System / Connectivity Telemetry Used by ML Models
+    const ctxInSys = document.getElementById('chart-input-system');
+    if (ctxInSys) {
+        chartInputSystem = new Chart(ctxInSys.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'CPU Usage (%)', data: [], borderColor: '#3b82f6', tension: 0.2 },
+                    { label: 'RAM Usage (%)', data: [], borderColor: '#ec4899', tension: 0.2 },
+                    { label: 'Wi-Fi Signal Strength (%)', data: [], borderColor: '#f97316', tension: 0.2 }
+                ]
+            },
+            options: lineOpts
+        });
+    }
+
+    // Prediction Chart 1: Random Forest Actual vs Predicted
+    const ctxRf = document.getElementById('chart-rf-pred');
+    if (ctxRf) {
+        chartRfPred = new Chart(ctxRf.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Actual Bandwidth (%)', data: [], borderColor: '#06b6d4', tension: 0.2, pointRadius: 2 },
+                    { label: 'Random Forest Pred (%)', data: [], borderColor: '#8b5cf6', borderDash: [4, 4], tension: 0.2, pointRadius: 2 }
+                ]
+            },
+            options: lineOpts
+        });
+    }
+
+    // Prediction Chart 2: Gradient Boosting Actual vs Predicted
+    const ctxGb = document.getElementById('chart-gb-pred');
+    if (ctxGb) {
+        chartGbPred = new Chart(ctxGb.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Actual Bandwidth (%)', data: [], borderColor: '#06b6d4', tension: 0.2, pointRadius: 2 },
+                    { label: 'Gradient Boosting Pred (%)', data: [], borderColor: '#10b981', borderDash: [4, 4], tension: 0.2, pointRadius: 2 }
+                ]
+            },
+            options: lineOpts
+        });
+    }
+
+    // Prediction Chart 3: XGBoost Actual vs Predicted
+    const ctxXgb = document.getElementById('chart-xgb-pred');
+    if (ctxXgb) {
+        chartXgbPred = new Chart(ctxXgb.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Actual Bandwidth (%)', data: [], borderColor: '#06b6d4', tension: 0.2, pointRadius: 2 },
+                    { label: 'XGBoost Pred (%)', data: [], borderColor: '#f97316', borderDash: [4, 4], tension: 0.2, pointRadius: 2 }
+                ]
+            },
+            options: lineOpts
+        });
+    }
+
+    // Bar Chart 1: Combined RMSE Comparison
+    const ctxRmse = document.getElementById('chart-cmp-rmse');
+    if (ctxRmse) {
+        chartCmpRmse = new Chart(ctxRmse.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Random Forest', 'Gradient Boosting', 'XGBoost', 'Naive Baseline'],
+                datasets: [{
+                    label: 'RMSE (Lower is better)',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['rgba(139, 92, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(249, 115, 22, 0.7)', 'rgba(107, 114, 128, 0.5)'],
+                    borderColor: ['#8b5cf6', '#10b981', '#f97316', '#6b7280'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+                }
+            }
+        });
+    }
+
+    // Bar Chart 2: Combined R² Comparison
+    const ctxR2 = document.getElementById('chart-cmp-r2');
+    if (ctxR2) {
+        chartCmpR2 = new Chart(ctxR2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Random Forest', 'Gradient Boosting', 'XGBoost', 'Naive Baseline'],
+                datasets: [{
+                    label: 'R² Score (Higher is better)',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['rgba(139, 92, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(249, 115, 22, 0.7)', 'rgba(107, 114, 128, 0.5)'],
+                    borderColor: ['#8b5cf6', '#10b981', '#f97316', '#6b7280'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Fetch telemetry data from local Flask API endpoints.
  */
 async function fetchTelemetry() {
     try {
@@ -178,6 +342,194 @@ async function fetchTelemetry() {
         }
     } catch (err) {
         console.error('Telemetry fetch error:', err);
+    }
+}
+
+/**
+ * Fetch cached ML algorithm comparison metrics from GET /api/model-comparison.
+ */
+async function fetchAlgorithmComparison() {
+    try {
+        const res = await fetch('/api/model-comparison').then(r => r.json());
+        updateComparisonView(res);
+    } catch (err) {
+        console.error('Algorithm comparison fetch error:', err);
+    }
+}
+
+/**
+ * Update Algorithm Comparison Module UI (Live Inputs Card, Next Predictions Card, Input Graphs, Top Performer Card, 3 Line Charts, 2 Bar Charts, Benchmark Table).
+ */
+function updateComparisonView(res) {
+    const bannerEl = document.getElementById('cmp-status-banner');
+    const textEl = document.getElementById('cmp-status-text');
+    const mainEl = document.getElementById('cmp-main-content');
+    const warnNoteEl = document.getElementById('best-warning-note');
+
+    if (!res || res.status === 'insufficient_data' || res.status === 'warming_up' || res.status === 'error') {
+        if (bannerEl && textEl) {
+            bannerEl.classList.remove('hidden');
+            textEl.textContent = res.message || 'Comparison module initializing...';
+        }
+        if (mainEl) mainEl.style.opacity = '0.5';
+        return;
+    }
+
+    if (bannerEl) bannerEl.classList.add('hidden');
+    if (mainEl) mainEl.style.opacity = '1';
+
+    const best = res.best_model || {};
+    const models = res.models || {};
+    const naive = res.naive_baseline || {};
+    const windowInfo = res.evaluation_window || {};
+    const currInputs = res.current_inputs || {};
+    const nextPreds = res.next_interval_predictions || {};
+    const inSeries = res.input_history_series || {};
+    const series = res.test_series || {};
+
+    // 1. STATUS METADATA BAR
+    const startT = windowInfo.start_time ? windowInfo.start_time.split(' ')[1] || windowInfo.start_time : '--';
+    const endT = windowInfo.end_time ? windowInfo.end_time.split(' ')[1] || windowInfo.end_time : '--';
+    document.getElementById('cmp-window-range').textContent = `${startT} → ${endT}`;
+    document.getElementById('cmp-updated-at').textContent = res.updated_at ? res.updated_at.split(' ')[1] || res.updated_at : '--';
+
+    // 2. CURRENT ML INPUTS CARD (LIVE TELEMETRY LATEST SNAPSHOT)
+    if (currInputs) {
+        document.getElementById('input-upload').textContent = `${currInputs.upload_speed ?? 0.0} KB/s`;
+        document.getElementById('input-download').textContent = `${currInputs.download_speed ?? 0.0} KB/s`;
+        document.getElementById('input-bandwidth').textContent = `${currInputs.bandwidth_utilization ?? 0.0} %`;
+        document.getElementById('input-signal').textContent = `${currInputs.signal_strength ?? 0} %`;
+        document.getElementById('input-cpu').textContent = `${currInputs.cpu_usage ?? 0.0} %`;
+        document.getElementById('input-ram').textContent = `${currInputs.ram_usage ?? 0.0} %`;
+        document.getElementById('input-power').textContent = `${currInputs.power_consumption ?? 0.0} W`;
+        document.getElementById('input-battery').textContent = `${currInputs.battery_voltage ?? 0.0} V`;
+        const clientsEl = document.getElementById('input-clients');
+        if (clientsEl) clientsEl.textContent = currInputs.connected_client_count ?? 0;
+        document.getElementById('input-load').textContent = `${currInputs.tower_load ?? 0.0} %`;
+        const deltaEl = document.getElementById('input-traffic-delta');
+        if (deltaEl) deltaEl.textContent = `${(currInputs.traffic_delta ?? 0.0).toFixed(2)} MB`;
+    }
+
+    // 3. CURRENT NEXT-INTERVAL PREDICTIONS CARD
+    if (nextPreds) {
+        document.getElementById('next-pred-rf').textContent = `${nextPreds['Random Forest'] ?? 0.0} %`;
+        document.getElementById('next-pred-gb').textContent = `${nextPreds['Gradient Boosting'] ?? 0.0} %`;
+        document.getElementById('next-pred-xgb').textContent = `${nextPreds['XGBoost'] ?? 0.0} %`;
+        const cardTimeEl = document.getElementById('cmp-updated-at-card');
+        if (cardTimeEl) cardTimeEl.textContent = res.updated_at ? res.updated_at.split(' ')[1] || res.updated_at : '--';
+    }
+
+    // 4. DYNAMIC TOP PERFORMER CARD & WIN REASON
+    document.getElementById('best-model-name').textContent = best.algorithm || '--';
+    document.getElementById('best-win-reason').textContent = best.win_reason || 'Lowest RMSE on current evaluation window';
+    document.getElementById('best-rmse').textContent = best.rmse !== undefined ? best.rmse.toFixed(4) : '--';
+    document.getElementById('best-mae').textContent = best.mae !== undefined ? best.mae.toFixed(4) : '--';
+    document.getElementById('best-r2').textContent = best.r2 !== undefined ? best.r2.toFixed(4) : '--';
+
+    if (warnNoteEl) {
+        if (best.is_weak_fit || (best.r2 !== undefined && best.r2 < 0)) {
+            warnNoteEl.classList.remove('hidden');
+        } else {
+            warnNoteEl.classList.add('hidden');
+        }
+    }
+
+    // 5. LIVE INPUT TELEMETRY TIME-SERIES CHARTS
+    if (chartInputNetwork && inSeries.timestamps) {
+        chartInputNetwork.data.labels = inSeries.timestamps;
+        chartInputNetwork.data.datasets[0].data = inSeries.upload_speed || [];
+        chartInputNetwork.data.datasets[1].data = inSeries.download_speed || [];
+        chartInputNetwork.data.datasets[2].data = inSeries.bandwidth_utilization || [];
+        chartInputNetwork.update();
+    }
+
+    if (chartInputSystem && inSeries.timestamps) {
+        chartInputSystem.data.labels = inSeries.timestamps;
+        chartInputSystem.data.datasets[0].data = inSeries.cpu_usage || [];
+        chartInputSystem.data.datasets[1].data = inSeries.ram_usage || [];
+        chartInputSystem.data.datasets[2].data = inSeries.signal_strength || [];
+        chartInputSystem.update();
+    }
+
+    // 6. COMPARISON METRICS TABLE & DYNAMIC WINNER HIGHLIGHT
+    const algoRows = {
+        'Random Forest': { rowId: 'row-rf', prefix: 'tbl-rf' },
+        'Gradient Boosting': { rowId: 'row-gb', prefix: 'tbl-gb' },
+        'XGBoost': { rowId: 'row-xgb', prefix: 'tbl-xgb' }
+    };
+
+    Object.keys(algoRows).forEach(algo => {
+        const info = algoRows[algo];
+        const mData = models[algo] || {};
+        const rowEl = document.getElementById(info.rowId);
+
+        document.getElementById(`${info.prefix}-mae`).textContent = mData.mae !== undefined ? mData.mae.toFixed(4) : '--';
+        document.getElementById(`${info.prefix}-rmse`).textContent = mData.rmse !== undefined ? mData.rmse.toFixed(4) : '--';
+        document.getElementById(`${info.prefix}-r2`).textContent = mData.r2 !== undefined ? mData.r2.toFixed(4) : '--';
+        document.getElementById(`${info.prefix}-time`).textContent = mData.train_time_sec !== undefined ? `${mData.train_time_sec.toFixed(4)} s` : '--';
+
+        if (rowEl) {
+            if (algo === best.algorithm) {
+                rowEl.classList.add('best-model-row');
+            } else {
+                rowEl.classList.remove('best-model-row');
+            }
+        }
+    });
+
+    // Populate Naive Baseline Row
+    if (naive) {
+        const nMae = document.getElementById('tbl-naive-mae');
+        const nRmse = document.getElementById('tbl-naive-rmse');
+        const nR2 = document.getElementById('tbl-naive-r2');
+        if (nMae) nMae.textContent = naive.mae !== undefined ? naive.mae.toFixed(4) : '--';
+        if (nRmse) nRmse.textContent = naive.rmse !== undefined ? naive.rmse.toFixed(4) : '--';
+        if (nR2) nR2.textContent = naive.r2 !== undefined ? naive.r2.toFixed(4) : '--';
+    }
+
+    // 7. METRIC CHIPS ABOVE INDIVIDUAL ALGORITHM GRAPHS
+    const rfM = models['Random Forest'] || {};
+    const gbM = models['Gradient Boosting'] || {};
+    const xgbM = models['XGBoost'] || {};
+
+    document.getElementById('chip-rf-metrics').textContent = `MAE ↓: ${rfM.mae ?? '--'} | RMSE ↓: ${rfM.rmse ?? '--'} | R² ↑: ${rfM.r2 ?? '--'}`;
+    document.getElementById('chip-gb-metrics').textContent = `MAE ↓: ${gbM.mae ?? '--'} | RMSE ↓: ${gbM.rmse ?? '--'} | R² ↑: ${gbM.r2 ?? '--'}`;
+    document.getElementById('chip-xgb-metrics').textContent = `MAE ↓: ${xgbM.mae ?? '--'} | RMSE ↓: ${xgbM.rmse ?? '--'} | R² ↑: ${xgbM.r2 ?? '--'}`;
+
+    // 8. THREE SEPARATE ALGORITHM ACTUAL VS PREDICTED LINE CHARTS
+    const timestamps = series.timestamps || [];
+    const actual = series.actual || [];
+
+    if (chartRfPred) {
+        chartRfPred.data.labels = timestamps;
+        chartRfPred.data.datasets[0].data = actual;
+        chartRfPred.data.datasets[1].data = rfM.predictions || [];
+        chartRfPred.update();
+    }
+
+    if (chartGbPred) {
+        chartGbPred.data.labels = timestamps;
+        chartGbPred.data.datasets[0].data = actual;
+        chartGbPred.data.datasets[1].data = gbM.predictions || [];
+        chartGbPred.update();
+    }
+
+    if (chartXgbPred) {
+        chartXgbPred.data.labels = timestamps;
+        chartXgbPred.data.datasets[0].data = actual;
+        chartXgbPred.data.datasets[1].data = xgbM.predictions || [];
+        chartXgbPred.update();
+    }
+
+    // 9. COMBINED RMSE & R² COMPARISON BAR CHARTS
+    if (chartCmpRmse) {
+        chartCmpRmse.data.datasets[0].data = [rfM.rmse ?? 0, gbM.rmse ?? 0, xgbM.rmse ?? 0, naive.rmse ?? 0];
+        chartCmpRmse.update();
+    }
+
+    if (chartCmpR2) {
+        chartCmpR2.data.datasets[0].data = [rfM.r2 ?? 0, gbM.r2 ?? 0, xgbM.r2 ?? 0, naive.r2 ?? 0];
+        chartCmpR2.update();
     }
 }
 

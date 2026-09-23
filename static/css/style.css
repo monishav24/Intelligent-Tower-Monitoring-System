@@ -562,3 +562,329 @@ body {
     .source-grid { grid-template-columns: 1fr; }
     .charts-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   LIVE 3-ALGORITHM ML COMPARISON MODULE STYLES
+   ========================================================================== */
+.comparison-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.comparison-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border-card);
+}
+
+.comparison-title h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.comparison-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.data-provenance-tag {
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+    font-size: 0.72rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    max-width: 420px;
+    text-align: right;
+}
+
+.cmp-pipeline-breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.cmp-pipeline-breadcrumbs .step {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+}
+
+.cmp-pipeline-breadcrumbs .arrow {
+    color: #64748b;
+}
+
+.cmp-status-banner {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: var(--accent-yellow);
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.cmp-status-banner.hidden {
+    display: none;
+}
+
+.cmp-panel {
+    padding: 1.1rem;
+}
+
+.cmp-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.cmp-panel-head h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.live-inputs-grid-11 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.6rem;
+}
+
+.input-chip-compact {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.input-chip-compact .lbl {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.input-chip-compact .val {
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: #f8fafc;
+}
+
+.cmp-row-1 { width: 100%; }
+
+.cmp-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.cmp-row-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+.cmp-row-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.cmp-row-5 {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 1.25rem;
+}
+
+.cmp-chart-container {
+    position: relative;
+    height: 240px;
+    width: 100%;
+}
+
+.pred-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.8rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--border-card);
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+/* Best Model Card */
+.best-model-card {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    padding: 1.1rem;
+}
+
+.best-card-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    color: #0f172a;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+}
+
+.best-card-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.best-warning-note {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: var(--accent-yellow);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    margin: 0.3rem 0;
+}
+
+.best-warning-note.hidden {
+    display: none;
+}
+
+.best-model-name {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0.4rem 0;
+}
+
+.best-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin: 0.5rem 0;
+}
+
+.best-metric-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.best-metric-box .lbl {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.best-metric-box .val {
+    font-size: 1.15rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--accent-green);
+}
+
+/* Metrics Table */
+.cmp-table-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1.1rem;
+}
+
+.cmp-table-container h4 {
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 0.3rem;
+}
+
+.cmp-table th, .cmp-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-card);
+}
+
+.cmp-table th {
+    background: rgba(15, 23, 42, 0.8);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.cmp-table td {
+    font-family: var(--font-mono);
+}
+
+.cmp-table tr.best-model-row {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-left: 4px solid var(--accent-green);
+}
+
+.cmp-table tr.best-model-row td {
+    color: #fff;
+    font-weight: 700;
+}
+
+.metric-pill-chip {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid var(--border-card);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+}
+
+@media (max-width: 1024px) {
+    .cmp-row-2, .cmp-row-3, .cmp-row-4, .cmp-row-5 {
+        grid-template-columns: 1fr;
+    }
+    .live-inputs-grid-11 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .live-inputs-grid-11 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
