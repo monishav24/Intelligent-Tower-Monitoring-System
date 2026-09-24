@@ -1,12 +1,11 @@
 /**
  * Intelligent Telecom Tower Monitoring Dashboard JavaScript
  * 100% Offline-First Execution, Real-Time Telemetry Pipeline, Chart.js Graphs & Demo Mode Controls
- * Includes 3-Algorithm Multi-Target ML Comparison Engine (Random Forest vs Gradient Boosting vs Extra Trees)
+ * Includes 3-Algorithm Multi-Target ML Experimental Evaluation (Random Forest vs Gradient Boosting vs Extra Trees)
  */
 
 let chartOverallComparison;
 let chartParamTraffic, chartParamDelay, chartParamThroughput, chartParamPropagation, chartParamRam;
-let lastSeenTimestamp = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     startClock();
@@ -36,28 +35,37 @@ function startClock() {
 }
 
 /**
- * Initialize 3-Algorithm Comparison & 5 Parameter Comparison Chart.js Instances.
+ * Initialize 3-Algorithm Comparison & 5 Parameter Comparison Chart.js Instances with Light Theme Styling.
  */
 function initComparisonCharts() {
-    Chart.defaults.color = '#94a3b8';
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
-    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    Chart.defaults.color = '#475569';
+    Chart.defaults.borderColor = '#BAE6FD';
+    Chart.defaults.font.family = 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
     const lineOpts = {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 300 },
         plugins: {
-            legend: { position: 'top', labels: { boxWidth: 10, padding: 8 } },
-            tooltip: { mode: 'index', intersect: false }
+            legend: { 
+                position: 'top', 
+                labels: { 
+                    boxWidth: 20, 
+                    padding: 12,
+                    font: { size: 12, weight: '600' },
+                    usePointStyle: false,
+                    color: '#0F172A'
+                } 
+            },
+            tooltip: { mode: 'index', intersect: false, backgroundColor: '#0F172A', titleColor: '#FFFFFF', bodyColor: '#BAE6FD' }
         },
         scales: {
-            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
-            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, font: { size: 11 }, color: '#475569' } },
+            y: { grid: { color: '#E0F2FE' }, ticks: { font: { size: 11 }, color: '#475569' } }
         }
     };
 
-    // 1. Overall 3-Algorithm Comparison Bar Chart
+    // 1. Overall 3-Algorithm Comparison Bar Chart (Composite Score 0-10 Scale)
     const ctxOverall = document.getElementById('chart-overall-comparison');
     if (ctxOverall) {
         chartOverallComparison = new Chart(ctxOverall.getContext('2d'), {
@@ -65,30 +73,46 @@ function initComparisonCharts() {
             data: {
                 labels: ['Random Forest', 'Gradient Boosting', 'Extra Trees'],
                 datasets: [{
-                    label: 'Overall Composite Performance Score',
+                    label: 'Overall Composite Score (/ 10)',
                     data: [0, 0, 0],
                     backgroundColor: [
-                        'rgba(139, 92, 246, 0.75)',
-                        'rgba(16, 185, 129, 0.75)',
-                        'rgba(249, 115, 22, 0.75)'
+                        'rgba(124, 58, 237, 0.85)',
+                        'rgba(22, 163, 74, 0.85)',
+                        'rgba(234, 88, 12, 0.85)'
                     ],
-                    borderColor: ['#8b5cf6', '#10b981', '#f97316'],
-                    borderWidth: 1.5
+                    borderColor: ['#7c3aed', '#16a34a', '#ea580c'],
+                    borderWidth: 1.5,
+                    borderRadius: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Composite Score: ${context.parsed.y.toFixed(2)} / 10`;
+                            }
+                        }
+                    }
+                },
                 scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, min: 0, max: 10, ticks: { stepSize: 1 }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+                    x: { grid: { display: false }, ticks: { color: '#0F172A', font: { weight: '600' } } },
+                    y: { 
+                        beginAtZero: true, 
+                        min: 0, 
+                        max: 10, 
+                        ticks: { stepSize: 2, color: '#475569', callback: value => `${value}` }, 
+                        grid: { color: '#E0F2FE' } 
+                    }
                 }
             }
         });
     }
 
-    // Helper to create parameter line chart
+    // Helper to create parameter line chart with Sky Theme styling
     const createParamChart = (elementId, paramLabel) => {
         const ctx = document.getElementById(elementId);
         if (!ctx) return null;
@@ -97,10 +121,56 @@ function initComparisonCharts() {
             data: {
                 labels: [],
                 datasets: [
-                    { label: `Actual ${paramLabel}`, data: [], borderColor: '#06b6d4', tension: 0.2, pointRadius: 2.5 },
-                    { label: 'Random Forest Pred', data: [], borderColor: '#8b5cf6', borderDash: [3, 3], tension: 0.2, pointRadius: 2 },
-                    { label: 'Gradient Boosting Pred', data: [], borderColor: '#10b981', borderDash: [3, 3], tension: 0.2, pointRadius: 2 },
-                    { label: 'Extra Trees Pred', data: [], borderColor: '#f97316', borderDash: [3, 3], tension: 0.2, pointRadius: 2 }
+                    { 
+                        label: `Actual ${paramLabel}`, 
+                        data: [], 
+                        borderColor: '#0284c7', 
+                        borderWidth: 2.5,
+                        tension: 0.2, 
+                        pointStyle: 'circle',
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#0369a1',
+                        pointBorderWidth: 0
+                    },
+                    { 
+                        label: 'Random Forest Pred', 
+                        data: [], 
+                        borderColor: '#7c3aed', 
+                        borderDash: [6, 4], 
+                        borderWidth: 2,
+                        tension: 0.2, 
+                        pointStyle: 'circle',
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#6d28d9',
+                        pointBorderWidth: 0
+                    },
+                    { 
+                        label: 'Gradient Boosting Pred', 
+                        data: [], 
+                        borderColor: '#059669', 
+                        borderDash: [4, 4], 
+                        borderWidth: 2,
+                        tension: 0.2, 
+                        pointStyle: 'circle',
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#047857',
+                        pointBorderWidth: 0
+                    },
+                    { 
+                        label: 'Extra Trees Pred', 
+                        data: [], 
+                        borderColor: '#ea580c', 
+                        borderWidth: 2,
+                        tension: 0.2, 
+                        pointStyle: 'circle',
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#c2410c',
+                        pointBorderWidth: 0
+                    }
                 ]
             },
             options: lineOpts
@@ -214,9 +284,9 @@ function updateTelemetryUi(data, diag) {
     const ramPct = data.ram_usage !== undefined ? data.ram_usage : 0.0;
     document.getElementById('kpi-ram').textContent = `${Number(ramPct).toFixed(1)} %`;
 
-    // 5. Live ML Predictions Dashboard
-    const activeModel = data.active_model || 'Random Forest';
-    document.getElementById('live-active-model-badge').textContent = `Active Model: ${activeModel}`;
+    // 5. Live ML Predictions Dashboard (Generated by Fixed Selected Model)
+    const selectedModel = data.selected_model || data.best_algorithm || data.active_model || 'Random Forest';
+    document.getElementById('live-active-model-badge').textContent = `SELECTED MODEL: ${selectedModel}`;
 
     const predTraffic = data.predicted_traffic !== undefined ? data.predicted_traffic : (data.predicted_network_traffic || 0.0);
     document.getElementById('pred-val-traffic').textContent = `${Number(predTraffic).toFixed(2)} MB`;
@@ -290,7 +360,8 @@ async function fetchAlgorithmComparison() {
  */
 async function triggerRetrain() {
     try {
-        document.getElementById('best-model-name').textContent = 'Retraining All 3...';
+        const nameEl = document.getElementById('best-model-name');
+        if (nameEl) nameEl.textContent = 'Retraining All 3...';
         const res = await fetch('/api/ml/retrain', { method: 'POST' }).then(r => r.json());
         if (res.data) {
             updateComparisonView(res.data);
@@ -302,7 +373,7 @@ async function triggerRetrain() {
 }
 
 /**
- * Update 3-Algorithm Comparison View (Status Cards, Overall Graph, Top Performer Card, Performance Table, Dataset Info, 5 Parameter Graphs).
+ * Update 3-Algorithm Comparison View (Status Cards, Overall Graph, Best Algorithm Card, Performance Table, Dataset Info, 5 Parameter Graphs).
  */
 function updateComparisonView(res) {
     if (!res || res.status === 'insufficient_data' || res.status === 'warming_up' || res.status === 'error') {
@@ -311,7 +382,7 @@ function updateComparisonView(res) {
         return;
     }
 
-    const activeModel = res.active_model || 'Random Forest';
+    const bestAlgorithm = res.best_algorithm || res.selected_model || res.active_model || 'Random Forest';
     const topPerformer = res.top_performer || {};
     const overallScores = res.overall_scores || {};
     const datasetInfo = res.dataset_info || {};
@@ -319,9 +390,9 @@ function updateComparisonView(res) {
     const paramSeries = res.parameter_comparison || {};
 
     // 1. UPDATE EXECUTION STATUS CARDS FOR ALL 3 ALGORITHMS
-    const rfScore = overallScores['Random Forest'] !== undefined ? `${Number(overallScores['Random Forest']).toFixed(2)} / 10` : '--';
-    const gbScore = overallScores['Gradient Boosting'] !== undefined ? `${Number(overallScores['Gradient Boosting']).toFixed(2)} / 10` : '--';
-    const etScore = overallScores['Extra Trees'] !== undefined ? `${Number(overallScores['Extra Trees']).toFixed(2)} / 10` : '--';
+    const rfScore = overallScores['Random Forest'] !== undefined ? `${Number(overallScores['Random Forest']).toFixed(2)} / 10` : '-- / 10';
+    const gbScore = overallScores['Gradient Boosting'] !== undefined ? `${Number(overallScores['Gradient Boosting']).toFixed(2)} / 10` : '-- / 10';
+    const etScore = overallScores['Extra Trees'] !== undefined ? `${Number(overallScores['Extra Trees']).toFixed(2)} / 10` : '-- / 10';
 
     const cardRf = document.getElementById('card-score-rf');
     if (cardRf) cardRf.textContent = rfScore;
@@ -330,11 +401,11 @@ function updateComparisonView(res) {
     const cardEt = document.getElementById('card-score-et');
     if (cardEt) cardEt.textContent = etScore;
 
-    // 2. TOP PERFORMER CARD
-    document.getElementById('best-model-name').textContent = topPerformer.algorithm || activeModel;
-    document.getElementById('best-overall-score').textContent = topPerformer.score !== undefined ? `${Number(topPerformer.score).toFixed(2)} / 10` : '--';
+    // 2. BEST ALGORITHM CARD (Displays exactly ONE best-performing algorithm)
+    document.getElementById('best-model-name').textContent = topPerformer.algorithm || bestAlgorithm;
+    document.getElementById('best-overall-score').textContent = topPerformer.score !== undefined ? `${Number(topPerformer.score).toFixed(2)} / 10` : '-- / 10';
 
-    // 3. OVERALL COMPARISON BAR CHART
+    // 3. OVERALL COMPARISON BAR CHART (0-10 Scale)
     if (chartOverallComparison) {
         const numRf = overallScores['Random Forest'] || 0;
         const numGb = overallScores['Gradient Boosting'] || 0;
@@ -349,10 +420,10 @@ function updateComparisonView(res) {
         document.getElementById('ds-samples').textContent = `${datasetInfo.total_samples || 0} samples`;
         document.getElementById('ds-split').textContent = `Train: ${datasetInfo.train_samples || 0} | Test: ${datasetInfo.test_samples || 0}`;
         document.getElementById('ds-last-train').textContent = datasetInfo.last_training ? (datasetInfo.last_training.split(' ')[1] || datasetInfo.last_training) : '--';
-        document.getElementById('ds-active-model').textContent = activeModel;
+        document.getElementById('ds-active-model').textContent = bestAlgorithm;
     }
 
-    // 5. MODEL PERFORMANCE TABLE (Columns: Model, Parameter, MAE, RMSE, R², Overall Score, Status)
+    // 5. MODEL PERFORMANCE TABLE (Columns: Algorithm, Parameter, MAE, RMSE, R², Composite Score / 10, Selection Status)
     const tbody = document.getElementById('cmp-table-body');
     if (tbody && models) {
         let rowsHtml = '';
@@ -371,8 +442,8 @@ function updateComparisonView(res) {
             const targets = mData.targets || {};
             const rawScore = mData.overall_score !== undefined ? mData.overall_score : 0;
             const formattedScore = `${Number(rawScore).toFixed(2)} / 10`;
-            const isActive = (algo === activeModel);
-            const statusBadge = isActive ? '<strong style="color: #10b981;">● ACTIVE MODEL</strong>' : '<span style="color: #94a3b8;">✓ Executed</span>';
+            const isBest = (algo === bestAlgorithm);
+            const statusBadge = isBest ? '<span class="status-badge online">🏆 BEST ALGORITHM</span>' : '<span style="color: var(--text-muted); font-size: 0.78rem;">✓ Evaluated</span>';
 
             paramNames.forEach((param, idx) => {
                 const tInfo = targets[param] || {};
@@ -381,13 +452,13 @@ function updateComparisonView(res) {
                 const r2 = tInfo.r2 !== undefined ? tInfo.r2.toFixed(4) : '--';
 
                 rowsHtml += `
-                    <tr class="${isActive ? 'best-model-row' : ''}">
-                        ${idx === 0 ? `<td rowspan="5" style="vertical-align: middle; font-weight: bold;">${algo}</td>` : ''}
+                    <tr class="${isBest ? 'best-model-row' : ''}">
+                        ${idx === 0 ? `<td rowspan="5" style="vertical-align: middle; font-weight: 700;">${algo}</td>` : ''}
                         <td>${paramLabels[param]}</td>
                         <td>${mae}</td>
                         <td>${rmse}</td>
                         <td>${r2}</td>
-                        ${idx === 0 ? `<td rowspan="5" style="vertical-align: middle; font-weight: bold; font-size: 1.1rem; color: #38bdf8;">${formattedScore}</td>` : ''}
+                        ${idx === 0 ? `<td rowspan="5" style="vertical-align: middle; font-weight: 800; font-size: 1.05rem; color: var(--color-actual);">${formattedScore}</td>` : ''}
                         ${idx === 0 ? `<td rowspan="5" style="vertical-align: middle;">${statusBadge}</td>` : ''}
                     </tr>
                 `;
@@ -425,6 +496,7 @@ function updateAlertsFeed(alerts) {
 
     if (!alerts || alerts.length === 0) {
         badgeEl.textContent = '0 Alerts';
+        badgeEl.className = 'status-badge online';
         feedEl.innerHTML = `
             <div class="empty-alerts">
                 <p>✅ All monitored parameters operating within normal thresholds.</p>
@@ -434,6 +506,7 @@ function updateAlertsFeed(alerts) {
     }
 
     badgeEl.textContent = `${alerts.length} Active`;
+    badgeEl.className = 'status-badge warning';
     feedEl.innerHTML = alerts.map(a => `
         <div class="alert-card ${a.severity}">
             <div>

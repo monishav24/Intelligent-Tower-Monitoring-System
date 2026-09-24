@@ -1,9 +1,10 @@
 """
-Test script to verify the Live 3-Algorithm Multi-Target ML Comparison Engine.
+Test script to verify the Live 3-Algorithm Multi-Target ML Comparison Engine & Fixed Model Selection.
 Ensures SQLite querying, common dataset preparation, chronological 80/20 train/test split,
 3-model regressor training (Random Forest, Gradient Boosting, Extra Trees),
 multi-output evaluation for all 5 parameters (Traffic, Delay, Throughput, Propagation Time, RAM Usage),
-overall composite performance scoring, dynamic top performer selection, and model switching.
+overall composite performance scoring on a 0-10 scale, determination of ONE Best Algorithm,
+and persistence as the FIXED SELECTED MODEL for live predictions without dynamic switching.
 """
 import os
 import sys
@@ -11,10 +12,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import database.database as db
 from ml.algorithm_comparison import AlgorithmComparisonEngine
+from ml.predictor import NetworkPredictor
 
 def test_engine():
     print("\n========================================================================")
-    print("   TESTING LIVE 3-ALGORITHM MULTI-TARGET ML COMPARISON ENGINE          ")
+    print("   TESTING 3-ALGORITHM ML BENCHMARK & FIXED SELECTED MODEL ENGINE       ")
     print("========================================================================")
 
     # 1. Initialize Database
@@ -75,20 +77,40 @@ def test_engine():
     print(f"\n[*] Qualified Evaluation Result:")
     print(f"    - Status: {res_full.get('status')}")
     if res_full.get('status') == 'success':
-        print(f"    - Active Model: {res_full.get('active_model')}")
-        print(f"    - Overall Scores: {res_full.get('overall_scores')}")
-        print(f"    - Top Performer: {res_full.get('top_performer')}")
-        print(f"    - Dataset Info: {res_full.get('dataset_info')}")
+        best_algo = res_full.get('best_algorithm') or res_full.get('selected_model')
+        print(f"    - BEST ALGORITHM       : {best_algo}")
+        print(f"    - Selection Status     : {res_full.get('selection_status')}")
+        print(f"    - Overall Scores (/ 10): {res_full.get('overall_scores')}")
+        print(f"    - Top Performer Payload: {res_full.get('top_performer')}")
+        print(f"    - Dataset Info         : {res_full.get('dataset_info')}")
 
         print("\n    FULL MODEL BENCHMARK RESULTS:")
         for name, m in res_full["models"].items():
-            print(f"       - {name:20s} | Avg MAE: {m['avg_mae']:<7.4f} | Avg RMSE: {m['avg_rmse']:<7.4f} | Avg R²: {m['avg_r2']:<7.4f} | Score: {m['overall_score']}")
+            print(f"       - {name:20s} | Avg MAE: {m['avg_mae']:<7.4f} | Avg RMSE: {m['avg_rmse']:<7.4f} | Avg R²: {m['avg_r2']:<7.4f} | Score: {m['overall_score']} / 10")
 
+        # Assertions
         assert res_full.get("score_scale") == 10, f"Expected score_scale 10, got {res_full.get('score_scale')}"
+        assert res_full.get("selection_status") == "SELECTED MODEL", f"Unexpected selection_status: {res_full.get('selection_status')}"
+        assert best_algo in ["Random Forest", "Gradient Boosting", "Extra Trees"], f"Invalid best_algorithm: {best_algo}"
+
         for name, score_val in res_full["overall_scores"].items():
             assert 0.0 <= score_val <= 10.0, f"Score for {name} out of 0-10 range: {score_val}"
 
-        print("\n[OK] TEST PASSED: All 3 models (Random Forest, Gradient Boosting, Extra Trees) trained, evaluated, scored (0-10 scale), and predicted all 5 parameters successfully!")
+        # 6. Verify Predictor loads fixed selected model
+        predictor = NetworkPredictor()
+        latest_snap = db.get_latest_snapshot()
+        preds = predictor.predict(latest_snap)
+        print(f"\n[*] NetworkPredictor Live Prediction Result:")
+        print(f"    - Loaded Selected Model: {preds.get('selected_model')}")
+        print(f"    - Predicted Traffic    : {preds.get('predicted_traffic')} MB")
+        print(f"    - Predicted Delay      : {preds.get('predicted_delay')} ms")
+        print(f"    - Predicted Throughput : {preds.get('predicted_throughput')} Mbps")
+        print(f"    - Predicted Propagation: {preds.get('predicted_propagation_time')} ms")
+        print(f"    - Predicted RAM Usage  : {preds.get('predicted_ram_usage')} %")
+
+        assert preds.get("selected_model") == best_algo, f"Predictor did not use fixed best algorithm {best_algo}"
+
+        print("\n[OK] TEST PASSED: All 3 algorithms (RF, GB, ET) evaluated, composite scores calculated (0-10 scale), ONE Best Algorithm selected, fixed in model registry, and live predictor verified!")
 
 if __name__ == "__main__":
     test_engine()

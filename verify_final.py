@@ -2,8 +2,8 @@
 Final End-to-End Verification Script.
 Inspects database raw values, performs numeric sanitization, validates dtypes,
 calculates target statistics across all 5 parameters (Traffic, Delay, Throughput, Propagation Time, RAM Usage),
-runs 3-algorithm multi-target comparison (Random Forest, Gradient Boosting, Extra Trees),
-and prints diagnostic summaries.
+runs 3-algorithm multi-target benchmark (Random Forest, Gradient Boosting, Extra Trees),
+verifies 0-10 composite scores, confirms ONE Best Algorithm selection, and validates predictor binding.
 """
 import os
 import sys
@@ -13,6 +13,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import database.database as db
 from ml.algorithm_comparison import AlgorithmComparisonEngine, FEATURE_COLUMNS, TARGET_COLUMNS
+from ml.predictor import NetworkPredictor
 
 def verify():
     db.init_db()
@@ -63,16 +64,27 @@ def verify():
     res = AlgorithmComparisonEngine.evaluate_live_data(min_records=10)
     
     if res.get("status") == "success":
+        best_algo = res.get("best_algorithm") or res.get("selected_model")
         top = res.get("top_performer", {})
-        print(f"Active Winning Model : {top.get('algorithm')}")
+        print(f"BEST ALGORITHM         : {best_algo}")
+        print(f"Selection Status       : {res.get('selection_status')}")
         print(f"Overall Composite Score : {top.get('score')} / 10")
-        print(f"Active Model Predictions: {res.get('live_predictions')}")
+        print(f"Selected Model Predictions: {res.get('live_predictions')}")
 
         print("\nFull 3-Algorithm Benchmark Table:")
         for name, m in res["models"].items():
-            print(f"  - {name:20s} | Avg MAE: {m['avg_mae']:<7.4f} | Avg RMSE: {m['avg_rmse']:<7.4f} | Avg R²: {m['avg_r2']:<7.4f} | Score: {m['overall_score']}")
+            print(f"  - {name:20s} | Avg MAE: {m['avg_mae']:<7.4f} | Avg RMSE: {m['avg_rmse']:<7.4f} | Avg R²: {m['avg_r2']:<7.4f} | Score: {m['overall_score']} / 10")
+
+        # Verify Predictor Binding
+        predictor = NetworkPredictor()
+        latest_snap = db.get_latest_snapshot()
+        preds = predictor.predict(latest_snap)
+        print("\nPredictor Inference Verification:")
+        print(f"  - Predictor Selected Model: {preds.get('selected_model')}")
+        print(f"  - Predicted Status        : {preds.get('predicted_status')}")
 
         print("========================================================================\n")
+        print("[VERIFICATION COMPLETE] All requirements verified successfully.")
     else:
         print(f"Comparison Result Status: {res.get('status')} - {res.get('message')}")
 

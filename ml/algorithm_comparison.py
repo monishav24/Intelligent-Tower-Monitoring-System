@@ -244,24 +244,27 @@ class AlgorithmComparisonEngine:
                 overall_scores[name] = score
                 m["overall_score"] = score
 
-            # Dynamically Determine Top-Performing Algorithm
+            # Determine Best-Performing Algorithm from Evaluation
             sorted_winners = sorted(overall_scores.items(), key=lambda item: item[1], reverse=True)
-            active_model_name = sorted_winners[0][0]
+            best_algorithm_name = sorted_winners[0][0]
             top_score = sorted_winners[0][1]
 
-            active_live_predictions = model_metrics[active_model_name]["live_predictions"]
+            selected_live_predictions = model_metrics[best_algorithm_name]["live_predictions"]
 
-            # Save Trained Models & Metadata Registry to Disk
+            # Save Trained Models & Metadata Registry to Disk as Fixed Selected Model
             os.makedirs(os.path.dirname(MODEL_REGISTRY_PATH), exist_ok=True)
             registry_payload = {
                 "models": {name: algo_info["model"] for name, algo_info in algorithms.items()},
-                "active_model_name": active_model_name,
+                "selected_model_name": best_algorithm_name,
+                "best_algorithm": best_algorithm_name,
+                "active_model_name": best_algorithm_name,  # Backward compatibility
                 "overall_scores": overall_scores,
                 "model_metrics": model_metrics,
                 "last_training": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "feature_columns": FEATURE_COLUMNS,
                 "target_columns": TARGET_COLUMNS,
-                "score_scale": 10
+                "score_scale": 10,
+                "selection_status": "SELECTED MODEL"
             }
             with open(MODEL_REGISTRY_PATH, "wb") as f:
                 pickle.dump(registry_payload, f)
@@ -288,14 +291,18 @@ class AlgorithmComparisonEngine:
             return {
                 "status": "success",
                 "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "active_model": active_model_name,
+                "best_algorithm": best_algorithm_name,
+                "selected_model": best_algorithm_name,
+                "active_model": best_algorithm_name,  # Backward compatibility
+                "selection_status": "SELECTED MODEL",
                 "score_scale": 10,
                 "overall_scores": overall_scores,
                 "top_performer": {
-                    "algorithm": active_model_name,
+                    "algorithm": best_algorithm_name,
                     "score": top_score,
                     "score_scale": 10,
-                    "status": "ACTIVE"
+                    "status": "SELECTED MODEL",
+                    "selection_basis": "Comparative evaluation using the same dataset, preprocessing pipeline, and test set."
                 },
                 "dataset_info": {
                     "source": "Live SQLite Telemetry",
@@ -306,11 +313,12 @@ class AlgorithmComparisonEngine:
                     "hardware_sensor": "Temperature Sensor",
                     "last_training": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "start_time": start_time_str,
-                    "end_time": end_time_str
+                    "end_time": end_time_str,
+                    "selected_model": best_algorithm_name
                 },
                 "models": model_metrics,
                 "parameter_comparison": parameter_comparison_series,
-                "live_predictions": active_live_predictions
+                "live_predictions": selected_live_predictions
             }
 
         except Exception as e:

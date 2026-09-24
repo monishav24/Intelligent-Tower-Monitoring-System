@@ -20,37 +20,40 @@ from ml.algorithm_comparison import MODEL_REGISTRY_PATH, FEATURE_COLUMNS, TARGET
 
 class NetworkPredictor:
     def __init__(self):
-        self.active_model = None
-        self.active_model_name = "Random Forest"
+        self.selected_model = None
+        self.selected_model_name = "Random Forest"
         self.feature_columns = FEATURE_COLUMNS
-        self.load_active_model()
+        self.load_selected_model()
 
-    def load_active_model(self):
-        """Load trained winning model from disk registry if available."""
+    def load_selected_model(self):
+        """Load trained fixed selected model from disk registry if available."""
         if os.path.exists(MODEL_REGISTRY_PATH):
             try:
                 with open(MODEL_REGISTRY_PATH, "rb") as f:
                     registry = pickle.load(f)
-                active_name = registry.get("active_model_name", "Random Forest")
+                selected_name = registry.get("selected_model_name") or registry.get("best_algorithm") or registry.get("active_model_name", "Random Forest")
                 models_dict = registry.get("models", {})
-                if active_name in models_dict:
-                    self.active_model = models_dict[active_name]
-                    self.active_model_name = active_name
+                if selected_name in models_dict:
+                    self.selected_model = models_dict[selected_name]
+                    self.selected_model_name = selected_name
                     self.feature_columns = registry.get("feature_columns", FEATURE_COLUMNS)
-                    print(f"[NetworkPredictor] Successfully loaded active winning model: {self.active_model_name}")
                     return True
             except Exception as e:
                 print(f"[NetworkPredictor Load Warning]: {e}")
         return False
 
+    def load_active_model(self):
+        """Backward compatibility alias for load_selected_model."""
+        return self.load_selected_model()
+
     def predict(self, snapshot):
         """
-        Predict 5 parameters from current telemetry snapshot using active winning model.
+        Predict 5 parameters from current telemetry snapshot using the fixed selected model.
         Returns dictionary containing predicted_traffic, predicted_delay, predicted_throughput,
-        predicted_propagation_time, predicted_ram_usage, active_model, congestion_risk, predicted_status.
+        predicted_propagation_time, predicted_ram_usage, selected_model, best_algorithm, congestion_risk, predicted_status.
         """
-        # Always attempt to reload active model if available
-        self.load_active_model()
+        # Load fixed selected model if available
+        self.load_selected_model()
 
         # Prepare feature vector matching training feature columns
         timestamp_str = snapshot.get("timestamp", "")
@@ -80,9 +83,9 @@ class NetworkPredictor:
 
         X_df = pd.DataFrame([row_dict])[self.feature_columns]
 
-        if self.active_model is not None:
+        if self.selected_model is not None:
             try:
-                preds = self.active_model.predict(X_df)[0]
+                preds = self.selected_model.predict(X_df)[0]
                 pred_traffic = round(max(float(preds[0]), 0.0), 2)
                 pred_delay = round(max(float(preds[1]), 0.1), 2)
                 pred_throughput = round(max(float(preds[2]), 0.0), 2)
@@ -119,7 +122,9 @@ class NetworkPredictor:
             "predicted_throughput": pred_throughput,
             "predicted_propagation_time": pred_prop,
             "predicted_ram_usage": pred_ram,
-            "active_model": self.active_model_name,
+            "selected_model": self.selected_model_name,
+            "best_algorithm": self.selected_model_name,
+            "active_model": self.selected_model_name,  # Backward compatibility
             "congestion_risk": congestion_risk,
             "predicted_status": predicted_status
         }

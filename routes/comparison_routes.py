@@ -61,9 +61,14 @@ def get_model_performance():
             "targets": info.get("targets", {})
         }
 
+    selected_model = res.get("selected_model") or res.get("best_algorithm") or res.get("active_model", "Random Forest")
+
     return jsonify({
         "status": "success",
-        "active_model": res.get("active_model"),
+        "best_algorithm": selected_model,
+        "selected_model": selected_model,
+        "active_model": selected_model,
+        "selection_status": "SELECTED MODEL",
         "score_scale": 10,
         "performance": performance_breakdown
     }), 200
@@ -83,37 +88,46 @@ def get_all_model_predictions():
     for algo, info in models_data.items():
         predictions_by_model[algo] = info.get("live_predictions", {})
 
+    selected_model = res.get("selected_model") or res.get("best_algorithm") or res.get("active_model", "Random Forest")
+
     return jsonify({
         "status": "success",
-        "active_model": res.get("active_model"),
-        "active_model_predictions": res.get("live_predictions", {}),
+        "best_algorithm": selected_model,
+        "selected_model": selected_model,
+        "active_model": selected_model,
+        "selection_status": "SELECTED MODEL",
+        "selected_model_predictions": res.get("live_predictions", {}),
         "all_model_predictions": predictions_by_model
     }), 200
 
+@comparison_bp.route("/api/ml/selected-model", methods=["GET"])
 @comparison_bp.route("/api/ml/active-model", methods=["GET"])
-def get_active_model_info():
-    """Retrieve dynamically selected winning model and its overall score."""
+def get_selected_model_info():
+    """Retrieve selected model determined via comparative evaluation."""
     if not comparison_service_instance:
         return jsonify({"status": "error", "message": "Comparison service reference not bound"}), 500
 
     res = comparison_service_instance.get_latest_comparison()
-    active_model = res.get("active_model", "Random Forest")
+    selected_model = res.get("selected_model") or res.get("best_algorithm") or res.get("active_model", "Random Forest")
     top_info = res.get("top_performer", {})
     score_val = top_info.get("score", 0)
 
     return jsonify({
         "status": "success",
-        "model": active_model,
-        "active_model": active_model,
+        "model": selected_model,
+        "best_algorithm": selected_model,
+        "selected_model": selected_model,
+        "active_model": selected_model,
         "score": score_val,
         "composite_score": score_val,
         "score_scale": 10,
-        "status_badge": "ACTIVE"
+        "selection_status": "SELECTED MODEL",
+        "status_badge": "SELECTED MODEL"
     }), 200
 
 @comparison_bp.route("/api/ml/retrain", methods=["POST", "GET"])
 def retrain_models():
-    """Trigger manual retraining of ALL 3 algorithms on live SQLite dataset and update winner."""
+    """Trigger manual retraining of ALL 3 algorithms on live SQLite dataset and update fixed selected model."""
     try:
         result = AlgorithmComparisonEngine.evaluate_live_data(min_records=10)
         if comparison_service_instance:
@@ -122,7 +136,7 @@ def retrain_models():
 
         return jsonify({
             "status": "success",
-            "message": "All 3 algorithms (Random Forest, Gradient Boosting, Extra Trees) retrained and evaluated successfully",
+            "message": "All 3 algorithms (Random Forest, Gradient Boosting, Extra Trees) retrained and evaluated successfully. Fixed selected model updated.",
             "data": result
         }), 200
     except Exception as e:

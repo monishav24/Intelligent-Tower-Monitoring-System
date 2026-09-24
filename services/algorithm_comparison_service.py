@@ -37,16 +37,18 @@ class AlgorithmComparisonService:
         # Give telemetry collector 3 seconds to spin up on startup
         time.sleep(3.0)
 
-        while self.running:
-            try:
-                result = AlgorithmComparisonEngine.evaluate_live_data()
-                with self._lock:
-                    self.latest_result = result
-            except Exception as e:
-                print(f"[Algorithm Comparison Service Error]: {e}")
-                # Retain previous cached result on error
+        # Perform initial model evaluation on startup
+        try:
+            result = AlgorithmComparisonEngine.evaluate_live_data()
+            with self._lock:
+                self.latest_result = result
+            print(f"[Algorithm Comparison Service] Initial model evaluation complete. Fixed selected model: {result.get('best_algorithm', 'Random Forest')}")
+        except Exception as e:
+            print(f"[Algorithm Comparison Service Startup Error]: {e}")
 
-            time.sleep(COMPARISON_INTERVAL_SECONDS)
+        # Maintain thread lifecycle without continuous model switching loops
+        while self.running:
+            time.sleep(300.0)
 
     def get_latest_comparison(self):
         """Thread-safe retrieval of latest cached evaluation result."""

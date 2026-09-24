@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intelligent Telecom Tower Monitoring & Alert System</title>
+    <title>Intelligent Telecom Tower Monitoring & Machine Learning System</title>
     <!-- Local Offline Chart.js Vendor Script (Zero CDN dependency) -->
     <script src="{{ url_for('static', filename='vendor/chart.min.js') }}"></script>
-    <!-- Custom Offline Stylesheet -->
+    <!-- Custom Offline Stylesheet (Clean Light Theme) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -18,7 +18,7 @@
                 <div class="brand-logo">📡</div>
                 <div>
                     <h1>INTELLIGENT TELECOM TOWER MONITORING SYSTEM</h1>
-                    <p class="brand-sub">Real-Time Telemetry Pipeline, Hardware Temperature Sensing, 3-Algorithm Multi-Target AI Engine</p>
+                    <p class="brand-sub">Real-Time Telemetry Pipeline, Hardware Temperature Sensing & 3-Algorithm Machine Learning Evaluation</p>
                 </div>
             </div>
 
@@ -34,7 +34,7 @@
             <div class="status-item">
                 <span class="status-title">Telemetry Pipeline:</span>
                 <span class="status-badge online" id="status-live-indicator">● LIVE</span>
-                <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 6px;" id="status-last-updated">Last updated: 0s ago</span>
+                <span style="font-size: 0.75rem; color: #64748b; margin-left: 6px;" id="status-last-updated">Last updated: 0s ago</span>
             </div>
             <div class="status-item">
                 <span class="status-title">Internet Connectivity:</span>
@@ -57,29 +57,29 @@
         <!-- Data Source Indicator Bar: Hardware vs Software Telemetry -->
         <section class="source-grid">
             <div class="source-box sim-source">
-                <div class="source-head">🌡️ HARDWARE LAYER</div>
+                <div class="source-head">🌡️ HARDWARE SENSOR LAYER</div>
                 <div class="source-tags">
-                    <span class="tag sim">Temperature Sensor (ESP32 / Host Fallback)</span>
+                    <span class="tag sim">Temperature Sensor (ESP32 Hardware / Host Fallback)</span>
                 </div>
             </div>
 
             <div class="source-box real-source">
-                <div class="source-head">💻 SOFTWARE / NETWORK TELEMETRY (LIVE MEASURED)</div>
+                <div class="source-head">💻 SOFTWARE & NETWORK TELEMETRY (REAL INGESTED DATA)</div>
                 <div class="source-tags">
                     <span class="tag real">1. Traffic (MB)</span>
                     <span class="tag real">2. Delay (ms)</span>
                     <span class="tag real">3. Throughput (Mbps)</span>
-                    <span class="tag real">4. Propagation Time (ms)</span>
+                    <span class="tag real">4. Estimated Propagation Time (ms)</span>
                     <span class="tag real">5. RAM Usage (%)</span>
-                    <span class="tag real">Wi-Fi Signal & Connected Devices</span>
+                    <span class="tag real">Wi-Fi & Hotspot Device Details</span>
                 </div>
             </div>
         </section>
 
-        <!-- Interactive Demo Mode Control Bar -->
+        <!-- Interactive Scenario Control & Model Retraining Bar -->
         <section class="demo-bar glass-panel">
             <div class="demo-title-flex">
-                <h3>🎮 Scenario Control Panel</h3>
+                <h3>🎮 Scenario & Model Management Panel</h3>
                 <span class="active-scenario-tag">Active Scenario: <strong id="active-scenario-name">NORMAL OPERATION</strong></span>
             </div>
             <div class="demo-btn-grid">
@@ -90,7 +90,7 @@
                 <button class="btn-scenario" onclick="triggerScenario('HIGH_TEMPERATURE')">🔥 High Temperature</button>
                 <button class="btn-scenario" onclick="triggerScenario('POWER_ANOMALY')">⚡ Power Anomaly</button>
                 <button class="btn-scenario danger" onclick="triggerScenario('NETWORK_DISCONNECTED')">❌ Network Disconnected</button>
-                <button class="btn-scenario reset" onclick="resetDemoMode()">🔄 RETURN TO LIVE MONITORING</button>
+                <button class="btn-scenario reset" onclick="triggerRetrain()">🔄 RETRAIN ALL 3 MODELS</button>
             </div>
         </section>
 
@@ -98,38 +98,38 @@
         <section class="kpi-grid">
             
             <!-- Hardware Temperature Card -->
-            <div class="kpi-card glass-panel sim-border">
+            <div class="kpi-card sim-border">
                 <span class="kpi-label">HARDWARE TEMPERATURE</span>
                 <h2 class="kpi-val" id="kpi-temp">-- °C</h2>
-                <span class="badge real" id="kpi-temp-source">ESP32 Sensor</span>
+                <span class="badge sim" id="kpi-temp-source">ESP32 Hardware</span>
             </div>
 
             <!-- 5 Required ML Telemetry KPI Cards -->
-            <div class="kpi-card glass-panel real-border">
+            <div class="kpi-card real-border">
                 <span class="kpi-label">Network Traffic</span>
                 <h2 class="kpi-val" id="kpi-total-traffic">0.0 MB</h2>
                 <span class="badge real">Software Telemetry</span>
             </div>
 
-            <div class="kpi-card glass-panel real-border">
+            <div class="kpi-card real-border">
                 <span class="kpi-label">Network Delay (Latency)</span>
                 <h2 class="kpi-val" id="kpi-delay">0.0 ms</h2>
                 <span class="badge real">Live ICMP Ping</span>
             </div>
 
-            <div class="kpi-card glass-panel real-border">
+            <div class="kpi-card real-border">
                 <span class="kpi-label">Throughput</span>
                 <h2 class="kpi-val" id="kpi-throughput">0.00 Mbps</h2>
                 <span class="badge real">Live Measurement</span>
             </div>
 
-            <div class="kpi-card glass-panel real-border">
-                <span class="kpi-label">Propagation Time</span>
+            <div class="kpi-card real-border">
+                <span class="kpi-label">Estimated Propagation Time</span>
                 <h2 class="kpi-val" id="kpi-propagation">0.0 ms</h2>
                 <span class="badge real">Estimated (RTT / 2)</span>
             </div>
 
-            <div class="kpi-card glass-panel real-border">
+            <div class="kpi-card real-border">
                 <span class="kpi-label">RAM Usage</span>
                 <h2 class="kpi-val" id="kpi-ram">0.0 %</h2>
                 <span class="badge sys">System Memory</span>
@@ -137,62 +137,59 @@
 
         </section>
 
-        <!-- ALGORITHM EXECUTION STATUS SECTION -->
-        <section class="glass-panel" style="margin-bottom: 20px;">
+        <!-- 3-ALGORITHM EXECUTION STATUS CARDS -->
+        <section class="glass-panel">
             <div class="panel-head">
-                <h3>⚡ 3-ALGORITHM EXECUTION & PREDICTION STATUS</h3>
-                <span class="badge sys">All 3 Algorithms Active & Evaluated Simultaneously</span>
+                <h3>⚡ 3-ALGORITHM EXECUTION STATUS</h3>
+                <span class="badge sys">Random Forest | Gradient Boosting | Extra Trees</span>
             </div>
-            <div class="cmp-row-3" style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 0.75rem;">
                 <!-- Random Forest Status Card -->
-                <div class="kpi-card glass-panel" id="status-card-rf" style="border-left: 4px solid #8b5cf6;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <h4 style="color: #8b5cf6; margin: 0;">Random Forest</h4>
+                <div class="kpi-card" id="status-card-rf" style="border-left: 4px solid var(--color-rf);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <h4 style="color: var(--color-rf); margin: 0; font-size: 0.95rem;">Random Forest</h4>
                         <span class="status-badge online" id="status-tag-rf">✓ Executed</span>
                     </div>
-                    <div style="font-size: 0.85rem; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
-                        <div>Training: <strong style="color: #10b981;">Success</strong></div>
-                        <div>Predictions: <strong style="color: #38bdf8;">Ready (5 Targets)</strong></div>
-                        <div>Score: <strong id="card-score-rf" style="color: #f8fafc;">--</strong></div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 2px;">
+                        <div>Evaluation: <strong style="color: var(--text-primary);">Completed</strong></div>
+                        <div>Score: <strong id="card-score-rf" style="color: var(--color-rf);">-- / 10</strong></div>
                     </div>
                 </div>
 
                 <!-- Gradient Boosting Status Card -->
-                <div class="kpi-card glass-panel" id="status-card-gb" style="border-left: 4px solid #10b981;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <h4 style="color: #10b981; margin: 0;">Gradient Boosting</h4>
+                <div class="kpi-card" id="status-card-gb" style="border-left: 4px solid var(--color-gb);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <h4 style="color: var(--color-gb); margin: 0; font-size: 0.95rem;">Gradient Boosting</h4>
                         <span class="status-badge online" id="status-tag-gb">✓ Executed</span>
                     </div>
-                    <div style="font-size: 0.85rem; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
-                        <div>Training: <strong style="color: #10b981;">Success</strong></div>
-                        <div>Predictions: <strong style="color: #38bdf8;">Ready (5 Targets)</strong></div>
-                        <div>Score: <strong id="card-score-gb" style="color: #f8fafc;">--</strong></div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 2px;">
+                        <div>Evaluation: <strong style="color: var(--text-primary);">Completed</strong></div>
+                        <div>Score: <strong id="card-score-gb" style="color: var(--color-gb);">-- / 10</strong></div>
                     </div>
                 </div>
 
                 <!-- Extra Trees Status Card -->
-                <div class="kpi-card glass-panel" id="status-card-et" style="border-left: 4px solid #f97316;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <h4 style="color: #f97316; margin: 0;">Extra Trees</h4>
+                <div class="kpi-card" id="status-card-et" style="border-left: 4px solid var(--color-et);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <h4 style="color: var(--color-et); margin: 0; font-size: 0.95rem;">Extra Trees</h4>
                         <span class="status-badge online" id="status-tag-et">✓ Executed</span>
                     </div>
-                    <div style="font-size: 0.85rem; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
-                        <div>Training: <strong style="color: #10b981;">Success</strong></div>
-                        <div>Predictions: <strong style="color: #38bdf8;">Ready (5 Targets)</strong></div>
-                        <div>Score: <strong id="card-score-et" style="color: #f8fafc;">--</strong></div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 2px;">
+                        <div>Evaluation: <strong style="color: var(--text-primary);">Completed</strong></div>
+                        <div>Score: <strong id="card-score-et" style="color: var(--color-et);">-- / 10</strong></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Middle Layout: Live Predictions Dashboard + Active Alerts + Hotspot Clients -->
+        <!-- Middle Layout: Live Predictions + Active Alerts + Hotspot Devices -->
         <div class="middle-layout">
             
             <!-- LIVE ML PREDICTIONS DASHBOARD CARD -->
-            <div class="ai-box glass-panel">
+            <div class="ai-box">
                 <div class="panel-head">
                     <h3>🧠 OFFICIAL LIVE ML PREDICTIONS</h3>
-                    <span class="ml-badge" id="live-active-model-badge">Active Model: Loading...</span>
+                    <span class="ml-badge" id="live-active-model-badge">SELECTED MODEL: Loading...</span>
                 </div>
                 <div class="ai-body">
                     <div class="pred-grid-5">
@@ -212,13 +209,13 @@
                             <span class="metric-label">Predicted Propagation</span>
                             <h3 class="metric-val" id="pred-val-propagation">-- ms</h3>
                         </div>
-                        <div class="pred-item-chip">
+                        <div class="pred-item-chip" style="grid-column: span 2;">
                             <span class="metric-label">Predicted RAM Usage</span>
                             <h3 class="metric-val" id="pred-val-ram">-- %</h3>
                         </div>
                     </div>
 
-                    <div class="risk-section" style="margin-top: 15px;">
+                    <div class="risk-section" style="margin-top: 10px;">
                         <span class="metric-label">Congestion Risk Level</span>
                         <div class="risk-track">
                             <div class="risk-fill" id="ai-risk-fill" style="width: 0%;"></div>
@@ -232,10 +229,10 @@
             </div>
 
             <!-- Active Anomaly Alerts Log -->
-            <div class="alerts-box glass-panel">
+            <div class="alerts-box">
                 <div class="panel-head">
                     <h3>🚨 Active Anomaly Alerts</h3>
-                    <span class="alerts-badge" id="alerts-count">0 Alerts</span>
+                    <span class="status-badge warning" id="alerts-count">0 Alerts</span>
                 </div>
                 <div class="alerts-feed" id="alerts-feed">
                     <div class="empty-alerts">
@@ -245,22 +242,22 @@
             </div>
 
             <!-- Windows Mobile Hotspot Connected Client Details Panel -->
-            <div class="hotspot-box glass-panel">
+            <div class="hotspot-box">
                 <div class="panel-head">
-                    <h3>📶 Connected Hotspot Devices Details</h3>
-                    <span class="hotspot-pill" id="hotspot-status-pill">ACTIVE</span>
+                    <h3>📶 Connected Hotspot Devices</h3>
+                    <span class="status-badge active" id="hotspot-status-pill">ACTIVE</span>
                 </div>
                 <div class="hotspot-body">
                     <div class="hotspot-row">
-                        <span>Hotspot Status:</span>
+                        <span>Hotspot Interface:</span>
                         <strong id="hotspot-state-text">ACTIVE</strong>
                     </div>
                     <div class="hotspot-row">
-                        <span>Detected Devices:</span>
+                        <span>Connected Devices:</span>
                         <strong id="hotspot-device-count">0 Devices</strong>
                     </div>
                     <div class="client-ip-container">
-                        <span class="metric-label">Detected Client IP Addresses:</span>
+                        <span class="metric-label" style="font-weight: 600; color: var(--text-secondary);">Attached Device IP Addresses:</span>
                         <div class="client-ip-list" id="client-ip-list">
                             <div class="no-clients">No client devices currently attached.</div>
                         </div>
@@ -270,86 +267,80 @@
 
         </div>
 
-        <!-- 3-ALGORITHM MACHINE LEARNING COMPARISON & BENCHMARK SECTION -->
+        <!-- 3-ALGORITHM BENCHMARK & BEST ALGORITHM SELECTION SECTION -->
         <section class="comparison-section glass-panel">
             
             <div class="comparison-header">
                 <div class="comparison-title">
-                    <h3>📊 3-Algorithm Parallel Benchmark & Comparison</h3>
-                    <p class="comparison-subtitle">Random Forest vs Gradient Boosting vs Extra Trees on 1 Common Telemetry Dataset</p>
+                    <h3>📊 3-Algorithm Experimental Benchmark & Model Evaluation</h3>
+                    <p class="comparison-subtitle">Random Forest vs Gradient Boosting vs Extra Trees evaluated on ONE common SQLite telemetry dataset</p>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="btn-scenario reset" onclick="triggerRetrain()" style="padding: 8px 16px;">🔄 RETRAIN ALL 3 MODELS</button>
-                    <span class="data-provenance-tag">Uses Live SQLite Telemetry</span>
+                    <span class="data-provenance-tag">Source: Live SQLite Telemetry</span>
                 </div>
             </div>
 
-            <!-- Top Performer & Overall Comparison Row -->
-            <div class="cmp-row-5" style="margin-top: 20px;">
+            <!-- BEST ALGORITHM CARD & DATASET INFO ROW -->
+            <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.25rem; margin-top: 10px;">
                 
-                <!-- TOP PERFORMER CARD -->
-                <div class="best-model-card glass-panel" style="flex: 1;">
-                    <div class="best-card-badge">🏆 TOP PERFORMING MODEL</div>
-                    <h4 class="best-card-subtitle">Dynamic Winner</h4>
-                    <h2 class="best-model-name" id="best-model-name">Calculating...</h2>
+                <!-- BEST ALGORITHM CARD -->
+                <div class="best-model-card">
+                    <div>
+                        <div class="best-card-badge">🏆 BEST ALGORITHM</div>
+                        <div class="best-card-subtitle">COMPARATIVE EVALUATION RESULT</div>
+                        <h2 class="best-model-name" id="best-model-name">Evaluating...</h2>
+                    </div>
                     
-                    <div class="best-metrics-row">
-                        <div class="best-metric-box">
-                            <span class="lbl">OVERALL SCORE</span>
-                            <span class="val" id="best-overall-score">--</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 0.75rem 0;">
+                        <div style="background: #FFFFFF; border: 1px solid var(--border-card); padding: 0.65rem 0.85rem; border-radius: 6px;">
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase;">COMPOSITE SCORE</span>
+                            <div style="font-size: 1.35rem; font-weight: 800; color: var(--sky-dark);" id="best-overall-score">-- / 10</div>
                         </div>
-                        <div class="best-metric-box">
-                            <span class="lbl">STATUS</span>
-                            <span class="val" style="color: #10b981; font-weight: bold;">● ACTIVE MODEL</span>
+                        <div style="background: #FFFFFF; border: 1px solid var(--border-card); padding: 0.65rem 0.85rem; border-radius: 6px;">
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase;">SELECTED MODEL</span>
+                            <div style="font-size: 0.85rem; font-weight: 800; color: var(--sky-primary); margin-top: 0.2rem;" id="best-selection-status">SELECTED MODEL</div>
                         </div>
                     </div>
-                </div>
 
-                <!-- OVERALL 3-ALGORITHM COMPARISON GRAPH -->
-                <div class="chart-box glass-panel" style="flex: 2;">
-                    <div class="chart-title">
-                        <h4>1. Overall Model Comparison (Composite Score)</h4>
-                        <span class="badge real">Random Forest vs Gradient Boosting vs Extra Trees</span>
-                    </div>
-                    <div class="cmp-chart-container">
-                        <canvas id="chart-overall-comparison"></canvas>
+                    <div class="best-explanation">
+                        <strong>Selection Basis:</strong> Based on comparative evaluation of all three algorithms using the same dataset, preprocessing pipeline, and 80/20 chronological test split.
                     </div>
                 </div>
 
                 <!-- DATASET INFORMATION CARD -->
-                <div class="cmp-card glass-panel" style="flex: 1;">
-                    <div class="cmp-card-head">
-                        <h4>📋 Dataset Information</h4>
+                <div class="cmp-card">
+                    <div class="panel-head">
+                        <h4>📋 Experimental Dataset Metadata</h4>
                     </div>
-                    <div class="next-preds-list" style="font-size: 0.85rem;">
-                        <div class="next-pred-item"><span>Source:</span> <strong id="ds-source">Live SQLite</strong></div>
-                        <div class="next-pred-item"><span>Total Samples:</span> <strong id="ds-samples">--</strong></div>
-                        <div class="next-pred-item"><span>Train / Test Split:</span> <strong id="ds-split">80% / 20%</strong></div>
-                        <div class="next-pred-item"><span>Predicted Targets:</span> <strong>5 Parameters</strong></div>
-                        <div class="next-pred-item"><span>Hardware:</span> <strong>Temperature Sensor</strong></div>
-                        <div class="next-pred-item"><span>Last Training:</span> <strong id="ds-last-train">--</strong></div>
-                        <div class="next-pred-item"><span>Active Model:</span> <strong id="ds-active-model">--</strong></div>
+                    <div style="font-size: 0.82rem; display: flex; flex-direction: column; gap: 0.45rem;">
+                        <div style="display: flex; justify-content: space-between;"><span>Data Source:</span> <strong id="ds-source">Live SQLite</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Total Samples:</span> <strong id="ds-samples">--</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Train / Test Split:</span> <strong id="ds-split">80% / 20%</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Target Parameters:</span> <strong>5 ML Targets</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Hardware Sensor:</span> <strong>Temperature Sensor</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Last Training:</span> <strong id="ds-last-train">--</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Selected Model:</span> <strong id="ds-active-model" style="color: var(--sky-primary);">--</strong></div>
                     </div>
                 </div>
 
             </div>
 
-            <!-- MODEL PERFORMANCE TABLE -->
-            <div class="cmp-table-container glass-panel" style="margin-top: 20px;">
+            <!-- MODEL PERFORMANCE BREAKDOWN TABLE -->
+            <div class="cmp-table-container">
                 <div class="panel-head">
-                    <h4>Detailed 3-Algorithm Performance Breakdown</h4>
+                    <h4>Detailed 3-Algorithm Performance Metrics Breakdown</h4>
                     <span class="badge sys">Evaluated on Common Test Set</span>
                 </div>
                 <table class="cmp-table">
                     <thead>
                         <tr>
-                            <th>Model</th>
-                            <th>Parameter</th>
+                            <th>Algorithm</th>
+                            <th>Target Parameter</th>
                             <th>MAE ↓</th>
                             <th>RMSE ↓</th>
                             <th>R² ↑</th>
                             <th>Composite Score / 10</th>
-                            <th>Status</th>
+                            <th>Selected Model</th>
                         </tr>
                     </thead>
                     <tbody id="cmp-table-body">
@@ -358,60 +349,72 @@
                 </table>
             </div>
 
-            <!-- 5 SEPARATE PARAMETER COMPARISON GRAPHS -->
-            <div style="margin-top: 25px;">
-                <h4 style="margin-bottom: 15px; color: #f8fafc; font-size: 1.1rem;">📈 5 Separate Parameter Comparison Graphs (Actual vs RF vs GB vs ET)</h4>
+            <!-- 6 COMPARISON GRAPHS IN 2-PER-ROW GRID LAYOUT -->
+            <div style="margin-top: 15px;">
+                <div class="panel-head" style="margin-bottom: 1rem;">
+                    <h3>📈 Performance Comparison Graphs (Actual vs RF vs GB vs ET)</h3>
+                    <span class="badge sys">2 Graphs Per Row | 0–10 Score Scale</span>
+                </div>
                 
-                <div class="cmp-row-3" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                    <!-- Graph 2: Traffic -->
-                    <div class="chart-box glass-panel">
+                <div class="graphs-grid-2">
+                    <!-- Graph 1: Network Traffic -->
+                    <div class="chart-box">
                         <div class="chart-title">
-                            <h4>2. Traffic Comparison (MB)</h4>
+                            <h4>1. Network Traffic Comparison (MB)</h4>
                         </div>
                         <div class="cmp-chart-container">
                             <canvas id="chart-param-traffic"></canvas>
                         </div>
                     </div>
 
-                    <!-- Graph 3: Delay -->
-                    <div class="chart-box glass-panel">
+                    <!-- Graph 2: Network Delay -->
+                    <div class="chart-box">
                         <div class="chart-title">
-                            <h4>3. Delay Comparison (ms)</h4>
+                            <h4>2. Network Delay Comparison (ms)</h4>
                         </div>
                         <div class="cmp-chart-container">
                             <canvas id="chart-param-delay"></canvas>
                         </div>
                     </div>
 
-                    <!-- Graph 4: Throughput -->
-                    <div class="chart-box glass-panel">
+                    <!-- Graph 3: Throughput -->
+                    <div class="chart-box">
                         <div class="chart-title">
-                            <h4>4. Throughput Comparison (Mbps)</h4>
+                            <h4>3. Throughput Comparison (Mbps)</h4>
                         </div>
                         <div class="cmp-chart-container">
                             <canvas id="chart-param-throughput"></canvas>
                         </div>
                     </div>
-                </div>
 
-                <div class="cmp-row-2" style="grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px;">
-                    <!-- Graph 5: Propagation Time -->
-                    <div class="chart-box glass-panel">
+                    <!-- Graph 4: Estimated Propagation Time -->
+                    <div class="chart-box">
                         <div class="chart-title">
-                            <h4>5. Propagation Time Comparison (ms)</h4>
+                            <h4>4. Estimated Propagation Time Comparison (ms)</h4>
                         </div>
                         <div class="cmp-chart-container">
                             <canvas id="chart-param-propagation"></canvas>
                         </div>
                     </div>
 
-                    <!-- Graph 6: RAM Usage -->
-                    <div class="chart-box glass-panel">
+                    <!-- Graph 5: RAM Usage -->
+                    <div class="chart-box">
                         <div class="chart-title">
-                            <h4>6. RAM Usage Comparison (%)</h4>
+                            <h4>5. RAM Usage Comparison (%)</h4>
                         </div>
                         <div class="cmp-chart-container">
                             <canvas id="chart-param-ram"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Graph 6: Overall Model Comparison Bar Chart -->
+                    <div class="chart-box">
+                        <div class="chart-title">
+                            <h4>6. Overall Model Comparison (Composite Score / 10)</h4>
+                            <span class="badge real">Scale: 0 – 10</span>
+                        </div>
+                        <div class="cmp-chart-container">
+                            <canvas id="chart-overall-comparison"></canvas>
                         </div>
                     </div>
                 </div>
@@ -421,7 +424,7 @@
 
         <!-- Footer -->
         <footer class="footer-card">
-            <p>INTELLIGENT TELECOM TOWER MONITORING SYSTEM &copy; 2026 | ECE Final-Year Project</p>
+            <p>INTELLIGENT TELECOM TOWER MONITORING SYSTEM &copy; 2026 | ECE Final-Year Engineering & Research Project</p>
         </footer>
 
     </div>
