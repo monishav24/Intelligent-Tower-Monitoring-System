@@ -1,7 +1,12 @@
 """
-Real-Time Random Forest Predictor Module.
-Infers future network traffic, congestion risk percentage, and predicted status.
-Prioritizes DISCONNECTED status whenever network connectivity is lost.
+Live Multi-Target Predictor Module.
+Loads trained active model from disk registry (multi_model_registry.pkl)
+and generates real-time predictions for all 5 ML parameters:
+1. Traffic
+2. Delay
+3. Throughput
+4. Propagation Time
+5. RAM Usage
 """
 import os
 import sys
@@ -11,93 +16,110 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
+from ml.algorithm_comparison import MODEL_REGISTRY_PATH, FEATURE_COLUMNS, TARGET_COLUMNS
 
 class NetworkPredictor:
     def __init__(self):
-        self.model_payload = None
-        self._ensure_and_load_model()
+        self.active_model = None
+        self.active_model_name = "Random Forest"
+        self.feature_columns = FEATURE_COLUMNS
+        self.load_active_model()
 
-    def _ensure_and_load_model(self):
-        """Auto-train model if pickle file is missing, then load into memory."""
-        if not os.path.exists(config.ML_MODEL_PATH):
-            from ml.train_model import train_and_save
-            train_and_save()
+    def load_active_model(self):
+        """Load trained winning model from disk registry if available."""
+        if os.path.exists(MODEL_REGISTRY_PATH):
+            try:
+                with open(MODEL_REGISTRY_PATH, "rb") as f:
+                    registry = pickle.load(f)
+                active_name = registry.get("active_model_name", "Random Forest")
+                models_dict = registry.get("models", {})
+                if active_name in models_dict:
+                    self.active_model = models_dict[active_name]
+                    self.active_model_name = active_name
+                    self.feature_columns = registry.get("feature_columns", FEATURE_COLUMNS)
+                    print(f"[NetworkPredictor] Successfully loaded active winning model: {self.active_model_name}")
+                    return True
+            except Exception as e:
+                print(f"[NetworkPredictor Load Warning]: {e}")
+        return False
 
-        try:
-            with open(config.ML_MODEL_PATH, "rb") as f:
-                self.model_payload = pickle.load(f)
-        except Exception as e:
-            print(f"[ML Predictor Load Error]: {e}")
-            self.model_payload = None
-
-    def predict(self, reading):
+    def predict(self, snapshot):
         """
-        Perform real-time prediction.
-        Overrides predicted status to 'DISCONNECTED' if wifi_status is DISCONNECTED.
+        Predict 5 parameters from current telemetry snapshot using active winning model.
+        Returns dictionary containing predicted_traffic, predicted_delay, predicted_throughput,
+        predicted_propagation_time, predicted_ram_usage, active_model, congestion_risk, predicted_status.
         """
-        wifi_status = reading.get("wifi_status", "CONNECTED").upper()
-        
-        # Priority rule: If network disconnected, enforce DISCONNECTED status immediately
-        if wifi_status == "DISCONNECTED" or reading.get("signal_strength", 100.0) == 0.0:
-            return {
-                "predicted_network_traffic": 0.0,
-                "congestion_risk": 0.0,
-                "predicted_status": "DISCONNECTED",
-                "confidence_score": 100.0
-            }
+        # Always attempt to reload active model if available
+        self.load_active_model()
 
-        if not self.model_payload:
-            self._ensure_and_load_model()
+        # Prepare feature vector matching training feature columns
+        timestamp_str = snapshot.get("timestamp", "")
+        hour = 12
+        minute = 0
+        day_of_week = 0
+        if timestamp_str and ":" in str(timestamp_str):
+            try:
+                dt = pd.to_datetime(timestamp_str)
+                hour = int(dt.hour)
+                minute = int(dt.minute)
+                day_of_week = int(dt.dayofweek)
+            except Exception:
+                pass
 
-        if not self.model_payload:
-            return {
-                "predicted_network_traffic": round(reading.get("throughput_mbps", 0.0) * 1.15, 2),
-                "congestion_risk": round(reading.get("bandwidth_utilization", 0.0), 1),
-                "predicted_status": "NORMAL",
-                "confidence_score": 85.0
-            }
+        row_dict = {
+            "traffic": float(snapshot.get("traffic", snapshot.get("total_network_traffic", 0.0)) or 0.0),
+            "delay": float(snapshot.get("delay", snapshot.get("delay_ms", 1.0)) or 1.0),
+            "throughput": float(snapshot.get("throughput", snapshot.get("throughput_mbps", 0.0)) or 0.0),
+            "propagation_time": float(snapshot.get("propagation_time", snapshot.get("propagation_time_ms", 0.5)) or 0.5),
+            "ram_usage": float(snapshot.get("ram_usage", snapshot.get("cpu_usage", 50.0)) or 50.0),
+            "temperature": float(snapshot.get("temperature", snapshot.get("system_temperature", 28.4)) or 28.4),
+            "hour": hour,
+            "minute": minute,
+            "day_of_week": day_of_week
+        }
 
-        try:
-            features = self.model_payload["features"]
-            rf_traffic = self.model_payload["rf_traffic"]
-            rf_risk = self.model_payload["rf_risk"]
-            rf_status = self.model_payload["rf_status"]
+        X_df = pd.DataFrame([row_dict])[self.feature_columns]
 
-            # Use temperature if available; fallback to 40°C if sensor unexposed
-            temp_val = reading.get("system_temperature")
-            if temp_val is None:
-                temp_val = 40.0
+        if self.active_model is not None:
+            try:
+                preds = self.active_model.predict(X_df)[0]
+                pred_traffic = round(max(float(preds[0]), 0.0), 2)
+                pred_delay = round(max(float(preds[1]), 0.1), 2)
+                pred_throughput = round(max(float(preds[2]), 0.0), 2)
+                pred_prop = round(max(float(preds[3]), 0.05), 2)
+                pred_ram = round(min(max(float(preds[4]), 0.0), 100.0), 1)
+            except Exception as e:
+                print(f"[NetworkPredictor Inference Error]: {e}")
+                pred_traffic = round(row_dict["traffic"] * 1.05, 2)
+                pred_delay = round(row_dict["delay"] * 1.02, 2)
+                pred_throughput = round(row_dict["throughput"] * 1.01, 2)
+                pred_prop = round(pred_delay / 2.0, 2)
+                pred_ram = round(min(row_dict["ram_usage"] * 1.02, 100.0), 1)
+        else:
+            # Fallback estimates if no model trained yet
+            pred_traffic = round(row_dict["traffic"] * 1.05, 2)
+            pred_delay = round(row_dict["delay"] * 1.02, 2)
+            pred_throughput = round(row_dict["throughput"] * 1.01, 2)
+            pred_prop = round(pred_delay / 2.0, 2)
+            pred_ram = round(min(row_dict["ram_usage"] * 1.02, 100.0), 1)
 
-            input_df = pd.DataFrame([{
-                "connected_users": reading.get("connected_users", 40),
-                "bandwidth_utilization": reading.get("bandwidth_utilization", 10.0),
-                "upload_speed": reading.get("upload_speed", 50.0),
-                "download_speed": reading.get("download_speed", 200.0),
-                "throughput_mbps": reading.get("throughput_mbps", 1.5),
-                "signal_strength": reading.get("signal_strength", 80.0),
-                "tower_load": reading.get("tower_load", 35.0),
-                "temperature": temp_val
-            }])[features]
+        # Calculate congestion risk & status
+        congestion_risk = round(min(max((pred_ram * 0.4 + (pred_delay / 100.0) * 30.0), 0.0), 100.0), 1)
+        if congestion_risk >= 80.0 or pred_ram >= 90.0:
+            predicted_status = "CRITICAL"
+        elif congestion_risk >= 50.0 or pred_ram >= 80.0:
+            predicted_status = "WARNING"
+        else:
+            predicted_status = "NORMAL"
 
-            pred_traffic = float(rf_traffic.predict(input_df)[0])
-            pred_risk = float(rf_risk.predict(input_df)[0])
-            pred_status = str(rf_status.predict(input_df)[0])
-
-            status_probs = rf_status.predict_proba(input_df)[0]
-            confidence_score = round(float(np.max(status_probs)) * 100.0, 1)
-
-            return {
-                "predicted_network_traffic": round(max(pred_traffic, 0.0), 2),
-                "congestion_risk": round(min(max(pred_risk, 0.0), 100.0), 1),
-                "predicted_status": pred_status,
-                "confidence_score": confidence_score
-            }
-
-        except Exception as e:
-            print(f"[ML Prediction Error]: {e}")
-            return {
-                "predicted_network_traffic": round(reading.get("throughput_mbps", 0.0), 2),
-                "congestion_risk": round(reading.get("bandwidth_utilization", 0.0), 1),
-                "predicted_status": "NORMAL",
-                "confidence_score": 80.0
-            }
+        return {
+            "predicted_traffic": pred_traffic,
+            "predicted_network_traffic": pred_traffic,
+            "predicted_delay": pred_delay,
+            "predicted_throughput": pred_throughput,
+            "predicted_propagation_time": pred_prop,
+            "predicted_ram_usage": pred_ram,
+            "active_model": self.active_model_name,
+            "congestion_risk": congestion_risk,
+            "predicted_status": predicted_status
+        }

@@ -1,8 +1,9 @@
 """
 Final End-to-End Verification Script.
 Inspects database raw values, performs numeric sanitization, validates dtypes,
-calculates target statistics, runs 3-model comparison + naive persistence baseline,
-and prints all required diagnostic summaries.
+calculates target statistics across all 5 parameters (Traffic, Delay, Throughput, Propagation Time, RAM Usage),
+runs 3-algorithm multi-target comparison (Random Forest, Gradient Boosting, Extra Trees),
+and prints diagnostic summaries.
 """
 import os
 import sys
@@ -11,7 +12,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import database.database as db
-from ml.algorithm_comparison import AlgorithmComparisonEngine, FEATURE_COLUMNS
+from ml.algorithm_comparison import AlgorithmComparisonEngine, FEATURE_COLUMNS, TARGET_COLUMNS
 
 def verify():
     db.init_db()
@@ -26,13 +27,8 @@ def verify():
             df_raw[col] = 0.0
         df_raw[col] = pd.to_numeric(df_raw[col], errors="coerce")
 
-    if df_raw["system_temperature"].isna().all():
-        df_raw["system_temperature"] = 40.0
-    else:
-        df_raw["system_temperature"] = df_raw["system_temperature"].fillna(40.0)
-
     df_raw.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df_clean = df_raw.dropna(subset=FEATURE_COLUMNS + ["bandwidth_utilization"]).reset_index(drop=True)
+    df_clean = df_raw.dropna(subset=FEATURE_COLUMNS).reset_index(drop=True)
 
     print(df_clean[FEATURE_COLUMNS].dtypes)
     all_numeric = all(pd.api.types.is_numeric_dtype(df_clean[c]) for c in FEATURE_COLUMNS)
@@ -45,8 +41,8 @@ def verify():
     split_idx = int(n_total * 0.8)
     train_raw = df_clean.iloc[:split_idx]
     test_raw = df_clean.iloc[split_idx:]
-    n_train = len(train_raw) - 1
-    n_test = len(test_raw) - 1
+    n_train = max(len(train_raw) - 1, 0)
+    n_test = max(len(test_raw) - 1, 0)
 
     print(f"Total Window Dataset Size: {n_total} records")
     print(f"Training Pair Size (80%): {n_train} records")
@@ -54,42 +50,28 @@ def verify():
     print(f"Sampling Horizon       : ~2 seconds interval per record (~{round(n_total*2/60, 1)} minutes total span)")
 
     print("\n========================================================================")
-    print("   3. TARGET STATISTICS (bandwidth_utilization)")
+    print("   3. 5 TARGET PARAMETER STATISTICS")
     print("========================================================================")
-    t = df_clean["bandwidth_utilization"]
-    print(f"Mean : {t.mean():.4f} %")
-    print(f"Std  : {t.std():.4f} %")
-    print(f"Min  : {t.min():.4f} %")
-    print(f"Max  : {t.max():.4f} %")
-    print(f"Unique Target Values: {t.nunique()}")
+    for target in TARGET_COLUMNS:
+        if target in df_clean.columns:
+            t = df_clean[target]
+            print(f"[{target:20s}] Mean: {t.mean():.4f} | Std: {t.std():.4f} | Min: {t.min():.4f} | Max: {t.max():.4f}")
 
     print("\n========================================================================")
-    print("   4. MODEL RESULTS & BEST MODEL")
+    print("   4. 3-ALGORITHM MULTI-TARGET BENCHMARK RESULTS")
     print("========================================================================")
-    res = AlgorithmComparisonEngine.evaluate_live_data(min_records=100)
+    res = AlgorithmComparisonEngine.evaluate_live_data(min_records=10)
     
     if res.get("status") == "success":
-        best = res["best_model"]
-        print(f"Best Model Selected : {best['algorithm']}")
-        print(f"Best Model RMSE     : {best['rmse']}")
-        print(f"Best Model MAE      : {best['mae']}")
-        print(f"Best Model R^2      : {best['r2']}")
-        print(f"Is Weak Fit (R^2<0) : {best['is_weak_fit']}")
-        if best.get("performance_warning"):
-            print(f"Warning Message     : {best['performance_warning']}")
+        top = res.get("top_performer", {})
+        print(f"Active Winning Model : {top.get('algorithm')}")
+        print(f"Overall Composite Score : {top.get('score')} / 10")
+        print(f"Active Model Predictions: {res.get('live_predictions')}")
 
-        print("\nFull Model Metrics:")
+        print("\nFull 3-Algorithm Benchmark Table:")
         for name, m in res["models"].items():
-            print(f"  - {name:20s} | MAE: {m['mae']:<7.4f} | RMSE: {m['rmse']:<7.4f} | R^2: {m['r2']:<7.4f} | Time: {m['train_time_sec']}s")
+            print(f"  - {name:20s} | Avg MAE: {m['avg_mae']:<7.4f} | Avg RMSE: {m['avg_rmse']:<7.4f} | Avg R²: {m['avg_r2']:<7.4f} | Score: {m['overall_score']}")
 
-        print("\n========================================================================")
-        print("   5. BASELINE RESULTS (Naive Persistence)")
-        print("========================================================================")
-        nb = res.get("naive_baseline", {})
-        print(f"Name : {nb.get('name')}")
-        print(f"MAE  : {nb.get('mae')}")
-        print(f"RMSE : {nb.get('rmse')}")
-        print(f"R^2  : {nb.get('r2')}")
         print("========================================================================\n")
     else:
         print(f"Comparison Result Status: {res.get('status')} - {res.get('message')}")

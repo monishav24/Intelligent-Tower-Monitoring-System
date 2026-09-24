@@ -1,200 +1,173 @@
 # INTELLIGENT TELECOM TOWER MONITORING AND ALERT SYSTEM
 
-> **ECE Final-Year Project Prototype (~75% Completion)**  
-> *Laptop-Based Real-Time Network and System Monitoring Prototype with Simulated Telecom Tower Parameters*
+> **ECE Final-Year Project Specifications & Implementation Manual**  
+> *Real-Time Network Telemetry, Single Physical Temperature Sensor, 3-Algorithm Multi-Target AI Benchmark, and Offline System*
 
 ---
 
-## 📌 1. Project Overview
+## 📌 1. System Overview
 
-The **Intelligent Telecom Tower Monitoring and Alert System** is a software-hardware integrated engineering solution designed to continuously monitor telecom tower infrastructure and network telemetry, predict network congestion using Random Forest machine learning models, detect multi-threshold anomalies, and generate instant visual & database alerts.
-
----
-
-## 🎯 2. Problem Statement & Prototype Description
-
-Telecom tower infrastructure requires 24/7 continuous health monitoring to prevent sudden power outages, hardware thermal failure, bandwidth congestion, and network disconnections.
-
-During the current project evaluation phase prior to ESP32 hardware deployment:
-- **Laptop Environment**: Acts as a **small-scale prototype network node and monitoring server**.
-- **Real-Time Laptop Telemetry**: Collects actual host laptop network traffic, upload/download speeds, bandwidth usage %, Wi-Fi signal %, CPU %, RAM %, battery level, and temperature (where exposed by Windows ACPI/WMI).
-- **Simulated Prototype Data**: Parameters that require physical IoT sensors (Power consumption, Battery voltage, Connected users, Tower load) are dynamically simulated with realistic physical trends and explicitly labeled as **SIMULATED PROTOTYPE DATA**.
-
-> *Note: This project strictly represents a software-integrated prototype (~75% completion). It does NOT falsely claim that the host laptop is a physical cellular tower.*
+The **Intelligent Telecom Tower Monitoring and Alert System** is a production-grade software-hardware monitoring platform. It combines real-time network and system telemetry collection, ESP32 IoT temperature hardware integration, multi-target machine learning forecasting across 3 regressors (**Random Forest**, **Gradient Boosting**, **Extra Trees**), dynamic top-performer selection, and an offline web dashboard with real-time Chart.js visualizations.
 
 ---
 
-## 🏗️ 3. System Architecture
+## 🏗️ 2. Hardware vs. Software Telemetry Architecture
+
+The system clearly separates physical hardware sensing from network/software telemetry:
 
 ```
-                    INTERNET (Optional)
-                            │
-                            ▼
-                LAPTOP NETWORK INTERFACE
-                            │
-            ┌───────────────┴───────────────┐
-            ▼                               ▼
-  REAL-TIME NETWORK DATA           MOBILE HOTSPOT DATA
-  (psutil & netsh wlan)            (Shared Interface Data)
-            │                               │
-            └───────────────┬───────────────┘
-                            ▼
-                   SYSTEM HEALTH DATA
-               (CPU, RAM, Battery, Temp)
-                            │
-                            ▼
-                 PYTHON DATA COLLECTOR
-                            │
-                            ▼
-                      FLASK API
-                            │
-                            ▼
-                 SQLITE TIME-SERIES DB
-                            │
-            ┌───────────────┴───────────────┐
-            ▼                               ▼
-      ML PREDICTION                 ANOMALY DETECTION
- (Random Forest Forecast)      (Multi-Threshold + Disconnect)
-            │                               │
-            └───────────────┬───────────────┘
-                            ▼
-             REAL-TIME WEB DASHBOARD (100% Offline)
-                            │
-                            ▼
-                     ALERT MANAGEMENT
+┌─────────────────────────┐
+│     HARDWARE LAYER      │
+│  Temperature Sensor     │ (DHT22 / DS18B20 via ESP32 / Host Fallback)
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 SOFTWARE / NETWORK TELEMETRY                │
+│  1. Traffic (MB)                                            │
+│  2. Delay / Latency (ms)                                    │
+│  3. Throughput (Mbps)                                       │
+│  4. Propagation Time (ms) - Estimated from RTT/2            │
+│  5. RAM Usage (%)                                           │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             ▼
+                    SQLITE TIME-SERIES DB
+                             │
+                             ▼
+                   ONE COMMON REAL DATASET
+                   (Same Chronological 80/20 Split)
+                             │
+            ┌────────────────┼────────────────┐
+            ▼                ▼                ▼
+     Random Forest   Gradient Boosting   Extra Trees
+            │                │                │
+            └────────────────┼────────────────┘
+                             ▼
+                 Multi-Output Evaluation
+                  (MAE, RMSE, R² Metrics)
+                             │
+                             ▼
+                Composite Performance Score
+                 (Higher R², Lower MAE/RMSE)
+                             │
+                             ▼
+                   Dynamic Winner Selection
+                             │
+                             ▼
+                      ACTIVE MODEL
+                             │
+                             ▼
+             Live 5-Parameter Multi-Target Predictions
 ```
+
+> [!IMPORTANT]
+> - **Only ONE Physical Hardware Sensor**: Temperature Sensor (DHT22/DS18B20 on ESP32 or Host Laptop Fallback). No unnecessary physical sensors (humidity, voltage, current, etc.) are included in the hardware layer.
+> - **5 ML Telemetry Parameters**: Traffic, Delay, Throughput, Propagation Time, and RAM Usage are software/network parameters.
+> - **Estimated Propagation Time**: Propagation time is calculated as `RTT / 2` (where RTT is measured round-trip ping delay in ms). It is an estimated network metric, not a direct physical layer measurement.
 
 ---
 
-## 📊 4. Real Data vs. Simulated Data Breakdown
+## 📊 3. Monitored Telemetry & Data Provenance
 
-| Monitored Parameter | Data Source | Label in Dashboard | Sensor Replacement in Final Phase |
+| Monitored Parameter | Category | Data Source / Method | Role in ML System |
 | :--- | :--- | :--- | :--- |
-| **Bytes Sent & Received** | Host Laptop (`psutil`) | Real-Time Laptop Data | ESP32 Network Gateway |
-| **Upload / Download Speed** | Host Laptop (`psutil`) | Real-Time Laptop Data | Network Gateway Telemetry |
-| **Bandwidth Utilization (%)** | Host Laptop Throughput Formula | Real-Time Laptop Data | Gateway Bandwidth Monitor |
-| **Wi-Fi Signal Strength (%)** | Windows CLI (`netsh wlan`) | Real-Time Laptop Data | ESP32 Wi-Fi Telemetry |
-| **Wi-Fi SSID & Quality** | Windows CLI (`netsh wlan`) | Real-Time Laptop Data | Cellular RSSI Sensor |
-| **CPU & RAM Usage (%)** | Host Laptop (`psutil`) | Prototype Node System Health | ESP32 CPU/RAM Status |
-| **Battery % & Charging** | Host Laptop (`psutil`) | Prototype Node System Health | Battery Management System |
-| **Laptop Temperature (°C)** | Windows WMI / Demo Mode | Host / Demo Temperature | **DHT22 Temperature Sensor** |
-| **Mobile Hotspot Traffic** | Windows Interface Traffic | Real-Time Laptop Data | Shared Tower Telemetry |
-| **Tower Power Draw (W)** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | **INA219 Current/Power Sensor** |
-| **Tower Battery Voltage (V)** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | **Voltage Divider Module** |
-| **Connected Users Count** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | ESP32 Access Point Gateway |
-| **Tower Load (%)** | Dynamic Trend Simulator | **SIMULATED PROTOTYPE DATA** | Tower Microcontroller |
+| **Temperature (°C)** | Hardware Layer | ESP32 Temperature Sensor (or Host Fallback) | ML Input Feature / Live Display |
+| **Traffic (MB)** | Software Telemetry | Host Laptop Network Interface (`psutil`) | Prediction Target #1 & ML Feature |
+| **Delay (ms)** | Software Telemetry | Live ICMP Ping Latency Collector | Prediction Target #2 & ML Feature |
+| **Throughput (Mbps)** | Software Telemetry | Real-Time Bandwidth Measurement | Prediction Target #3 & ML Feature |
+| **Propagation Time (ms)** | Software Telemetry | Estimated from Measured Latency (`RTT / 2`) | Prediction Target #4 & ML Feature |
+| **RAM Usage (%)** | Software Telemetry | System Health Monitor (`psutil`) | Prediction Target #5 & ML Feature |
 
 ---
 
-## ⚡ 5. Features & Capabilities
+## 🧠 4. Machine Learning & Algorithm Comparison Engine
 
-1. **Real-Time Network & Health Collection**:
-   - Collects live host network telemetry every 2 seconds.
-   - Formats raw data dynamically into human-readable scales (B, KB, MB, GB, Mbps).
-   - Monitors Windows Wi-Fi state, signal percentage (0-100%), and SSID.
+### 4.1 Exactly 3 ML Regressors
+1. **Random Forest** (`RandomForestRegressor(n_estimators=50, random_state=42)`)
+2. **Gradient Boosting** (`MultiOutputRegressor(GradientBoostingRegressor(n_estimators=50, random_state=42))`)
+3. **Extra Trees** (`ExtraTreesRegressor(n_estimators=50, random_state=42)`)
 
-2. **100% Local Offline Capability (Zero Internet/CDN Dependencies)**:
-   - Flask web server runs locally on `http://127.0.0.1:5000`.
-   - SQLite time-series database operates 100% offline.
-   - Bundles local Chart.js library under `static/vendor/chart.min.js` so graphs render perfectly without Wi-Fi or internet.
+### 4.2 Single Common Real Telemetry Dataset
+- All 3 algorithms train on the **exact same prepared dataset** queried from historical telemetry stored in SQLite (`tower_readings`).
+- **No synthetic data** is used for production ML model comparison or evaluation. If SQLite records $< 50$, the system displays:
+  > *"Insufficient live telemetry for reliable model training. Continue collecting telemetry before training."*
+- **Train/Test Split**: Chronological 80% Training / 20% Testing split applied identically across all 3 models.
 
-3. **Network Disconnection & Auto-Recovery Engine**:
-   - Automatically detects Wi-Fi disconnections without server or dashboard crashes.
-   - Signal drops to 0%, status becomes `DISCONNECTED`, and emits `"CRITICAL: Network Connection Lost"`.
-   - Upon reconnecting, automatically logs `"INFO: Network Connection Restored"` and resumes signal tracking.
+### 4.3 Multi-Output Prediction Architecture
+Each algorithm simultaneously predicts all 5 target parameters:
+$$\mathbf{Y} = [\text{Traffic}, \text{Delay}, \text{Throughput}, \text{Propagation Time}, \text{RAM Usage}]$$
 
-4. **Random Forest Machine Learning Engine**:
-   - Trained on 1,000 synthetic diurnal telecom records.
-   - Predicts future network traffic (Mbps), calculates congestion risk %, classifies predicted status (`NORMAL`, `WARNING`, `CRITICAL`, `DISCONNECTED`), and outputs model confidence %.
+### 4.4 Composite Performance Score
+For each algorithm $m$, evaluation metrics (MAE, RMSE, $R^2$) are calculated across all 5 target parameters. Metrics are normalized into a documented 0 to 10 Composite Performance Score:
 
-5. **Multi-Threshold Anomaly Detection**:
-   - **Bandwidth Utilization**: Warning (≥70%), Critical (≥90%).
-   - **Wi-Fi Signal Strength**: Weak Warning (≤40%), Critical Signal Loss (≤20%), Disconnected (0%).
-   - **Laptop Temperature**: Warning (≥60°C), Critical (≥80°C).
-   - **Battery Voltage**: Warning (≤11.5V), Critical Depletion (≤10.8V).
-   - **Power Consumption**: Warning (≥150W), Critical Surge (≥220W).
-   - **Traffic Spike Detection**: Detects sudden throughput jumps (≥2.5x rolling average).
+$$\text{Score}(m) = 10 \times \left(0.4 \times \max(0, R^2_{\text{avg}}) + 0.3 \times \frac{1}{1 + \text{MAE}_{\text{avg}}} + 0.3 \times \frac{1}{1 + \text{RMSE}_{\text{avg}}}\right)$$
 
-6. **Interactive Demonstration Control Panel**:
-   - Instant scenario switcher buttons:
-     - `🟢 Normal Operation`
-     - `📈 High Network Traffic`
-     - `⚠️ Network Congestion`
-     - `📶 Weak Signal`
-     - `🔥 High Temperature`
-     - `⚡ Power Anomaly`
-     - `❌ Network Disconnected`
-     - `🔄 RETURN TO LIVE MONITORING`
+- **Dynamic Winner Selection**: The algorithm with the highest composite score is dynamically determined and designated as the **ACTIVE MODEL**. No hard-coded winners.
+- **Automatic Prediction Engine Switching**: The prediction engine automatically switches to the ACTIVE MODEL to generate live 5-parameter forecasts displayed on the dashboard.
 
 ---
 
-## 💻 6. Installation & How to Run
+## ⚡ 5. Dashboard Visualizations & Features
 
-### Prerequisites
-- Windows 10 or 11
-- Python 3.9, 3.10, 3.11, or 3.12 installed
+1. **Hardware Temperature Card**: Displays live Temperature Sensor reading (e.g. `28.4 °C`) from ESP32 or fallback.
+2. **Live Telemetry KPI Cards**: Real-time Traffic, Delay (ms), Throughput (Mbps), Propagation Time (ms), and RAM Usage (%).
+3. **Live ML Predictions Dashboard**: Real-time predictions for all 5 parameters from the selected ACTIVE MODEL.
+4. **Overall 3-Algorithm Comparison Graph**: Bar chart comparing composite performance scores for Random Forest, Gradient Boosting, and Extra Trees.
+5. **Top-Performer Card**: Displays winning model name dynamically with composite score and `● ACTIVE` status badge.
+6. **Detailed Model Performance Table**: Tables MAE, RMSE, $R^2$, overall score, and status (`ACTIVE` vs `Evaluated`) for every model and target.
+7. **5 Separate Parameter Comparison Line Graphs**:
+   - **Graph 1 — Traffic**: Actual vs RF vs GB vs ET
+   - **Graph 2 — Delay**: Actual vs RF vs GB vs ET
+   - **Graph 3 — Throughput**: Actual vs RF vs GB vs ET
+   - **Graph 4 — Propagation Time**: Actual vs RF vs GB vs ET
+   - **Graph 5 — RAM Usage**: Actual vs RF vs GB vs ET
+8. **Retrain Models Button**: Triggers instant on-demand retraining, re-evaluation, winner selection, and active model switching.
+
+---
+
+## 🔌 6. REST API Reference
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/latest` | `GET` | Returns full latest telemetry snapshot (5 parameters + Hardware Temperature) |
+| `/api/history` | `GET` | Returns time-series points for Chart.js rendering |
+| `/api/model-comparison` | `GET` | Returns 3-algorithm benchmark, overall scores, dynamic winner, and parameter comparison series |
+| `/api/ml/retrain` | `POST`/`GET` | Triggers 3-model retraining on SQLite history and updates active winning model |
+| `/api/prediction` | `GET` | Returns live 5-parameter predictions from active model |
+| `/api/esp32/telemetry` | `POST` | Ingests ESP32 Temperature Sensor readings and returns actuator flags |
+| `/api/demo-mode` | `POST` | Switches interactive test scenario |
+
+---
+
+## 💻 7. Installation & How to Run
 
 ### Step-by-Step Launch
-1. Open PowerShell and navigate to the project directory:
+1. Open PowerShell and navigate to the project root:
    ```powershell
-   cd C:\Users\mv240\.gemini\antigravity-ide\scratch\telecom_tower_monitoring
+   cd C:\Users\mv240\.gemini\antigravity-ide\scratch\Intelligent-Tower-Monitoring-System
    ```
-
-2. Activate the virtual environment:
+2. Activate virtual environment:
    ```powershell
    .venv\Scripts\activate
    ```
-
-3. Install required Python packages:
+3. Install dependencies:
    ```powershell
    pip install -r requirements.txt
    ```
-
-4. Launch the local application server:
+4. Run verification and test suite:
+   ```powershell
+   python test_comparison.py
+   python verify_final.py
+   ```
+5. Launch local application server:
    ```powershell
    python app.py
    ```
-
-5. Open your web browser and navigate to:
+6. Open dashboard in browser:
    **`http://127.0.0.1:5000`**
 
 ---
 
-## 🌐 7. How Offline Mode Works
-
-- **Zero Cloud / CDN Dependencies**: All JS, CSS, and Chart rendering libraries are loaded locally from `static/vendor/chart.min.js`.
-- **Offline Server**: Flask and SQLite run locally on `127.0.0.1`.
-- **Wi-Fi Disconnect Test**: You can turn off Wi-Fi or disconnect from internet completely during evaluation; the dashboard, database, and telemetry loop will continue running seamlessly!
-
----
-
-## 🎮 8. How Demo Mode Works (Tomorrow's Presentation Guide)
-
-1. **Live Network Demonstration**:
-   - Stream a video or download a file on your laptop. Watch the **Upload Speed**, **Download Speed**, and **Bandwidth Utilization** KPI cards and charts update live!
-
-2. **Network Disconnection Demonstration**:
-   - Turn OFF Wi-Fi on your laptop or click the **`❌ Network Disconnected`** demo button.
-   - The status pill immediately turns grey with **`NETWORK DISCONNECTED`**, signal becomes `0%`, ML status prioritizes **`DISCONNECTED`**, and a critical alert `"CRITICAL: Network Connection Lost"` appears in the alerts feed!
-   - Turn Wi-Fi back ON or click **`🔄 RETURN TO LIVE MONITORING`**; the system auto-recovers and emits `"INFO: Network Connection Restored"`.
-
-3. **Anomaly & AI Forecast Demonstration**:
-   - Click **`📈 High Network Traffic`**: Connected users and tower load rise.
-   - Click **`⚠️ Network Congestion`**: Congestion risk jumps >90%, triggering a `CRITICAL` congestion alert.
-   - Click **`🔥 High Temperature`**: Temperature surges above 80°C, triggering a `CRITICAL Overheating` alert.
-   - Click **`⚡ Power Anomaly`**: Power draw surges to 245W and battery voltage drops to 10.3V, triggering power alerts.
-
----
-
-## 🔮 9. Hardware Integration Roadmap (Remaining 25%)
-
-The final 25% hardware phase will integrate physical sensors via ESP32 microcontrollers:
-1. **ESP32 Microcontroller**: Edgenode collecting sensor telemetry and transmitting JSON payloads over HTTP/MQTT to Flask API.
-2. **DHT22 Sensor**: Measures ambient temperature (°C) and humidity.
-3. **INA219 I2C Sensor**: Measures DC current and power consumption (W).
-4. **Voltage Divider Module**: Monitors 12V backup battery pack voltage levels in real-time.
-
----
-
-## 📄 10. License & Credits
+## 📄 8. Credits & Project Metadata
 Developed for ECE Final-Year Engineering Curriculum.

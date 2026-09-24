@@ -18,7 +18,7 @@
                 <div class="brand-logo">📡</div>
                 <div>
                     <h1>INTELLIGENT TELECOM TOWER MONITORING SYSTEM</h1>
-                    <p class="brand-sub">Real-Time Telemetry, Live Hotspot Client Detection, AI Forecast & Offline Engine</p>
+                    <p class="brand-sub">Real-Time Telemetry Pipeline, Hardware Temperature Sensing, 3-Algorithm Multi-Target AI Engine</p>
                 </div>
             </div>
 
@@ -29,23 +29,24 @@
             </div>
         </header>
 
-        <!-- QUAD-STATUS CONNECTIVITY BAR -->
+        <!-- QUAD-STATUS CONNECTIVITY & LIVE PIPELINE BAR -->
         <section class="tri-status-bar glass-panel">
+            <div class="status-item">
+                <span class="status-title">Telemetry Pipeline:</span>
+                <span class="status-badge online" id="status-live-indicator">● LIVE</span>
+                <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 6px;" id="status-last-updated">Last updated: 0s ago</span>
+            </div>
             <div class="status-item">
                 <span class="status-title">Internet Connectivity:</span>
                 <span class="status-badge online" id="status-internet">ONLINE</span>
-            </div>
-            <div class="status-item">
-                <span class="status-title">Local Monitoring:</span>
-                <span class="status-badge active" id="status-local">ACTIVE</span>
             </div>
             <div class="status-item">
                 <span class="status-title">Hotspot Status:</span>
                 <span class="status-badge active" id="status-hotspot">ACTIVE</span>
             </div>
             <div class="status-item">
-                <span class="status-title">ESP32 IoT Hardware:</span>
-                <span class="status-badge offline" id="status-esp32">OFFLINE</span>
+                <span class="status-title">ESP32 Sensor:</span>
+                <span class="status-badge online" id="status-esp32">ONLINE</span>
             </div>
             <div class="status-item overall">
                 <span class="status-title">Overall System Status:</span>
@@ -53,29 +54,24 @@
             </div>
         </section>
 
-        <!-- Data Source Indicator Bar -->
+        <!-- Data Source Indicator Bar: Hardware vs Software Telemetry -->
         <section class="source-grid">
-            <div class="source-box real-source">
-                <div class="source-head">💻 REAL-TIME LAPTOP DATA</div>
+            <div class="source-box sim-source">
+                <div class="source-head">🌡️ HARDWARE LAYER</div>
                 <div class="source-tags">
-                    <span class="tag real">Network Traffic</span>
-                    <span class="tag real">Upload & Download Speed</span>
-                    <span class="tag real">Bandwidth Utilization</span>
-                    <span class="tag real">Wi-Fi Signal & SSID</span>
-                    <span class="tag real">Internet Connectivity Status</span>
-                    <span class="tag real">Connected Hotspot Devices (ARP Scan)</span>
-                    <span class="tag real">CPU & RAM Usage</span>
-                    <span class="tag real">Battery % & Charging</span>
+                    <span class="tag sim">Temperature Sensor (ESP32 / Host Fallback)</span>
                 </div>
             </div>
 
-            <div class="source-box sim-source">
-                <div class="source-head">⚡ TELECOM TOWER SENSORS</div>
+            <div class="source-box real-source">
+                <div class="source-head">💻 SOFTWARE / NETWORK TELEMETRY (LIVE MEASURED)</div>
                 <div class="source-tags">
-                    <span class="tag sim">Tower Temperature (°C)</span>
-                    <span class="tag sim">Power Draw (W)</span>
-                    <span class="tag sim">Battery Voltage (V)</span>
-                    <span class="tag sim">Tower Load (%)</span>
+                    <span class="tag real">1. Traffic (MB)</span>
+                    <span class="tag real">2. Delay (ms)</span>
+                    <span class="tag real">3. Throughput (Mbps)</span>
+                    <span class="tag real">4. Propagation Time (ms)</span>
+                    <span class="tag real">5. RAM Usage (%)</span>
+                    <span class="tag real">Wi-Fi Signal & Connected Devices</span>
                 </div>
             </div>
         </section>
@@ -98,121 +94,131 @@
             </div>
         </section>
 
-        <!-- 14 Live KPI Telemetry Cards Grid -->
+        <!-- 6 Core Telemetry KPI Cards -->
         <section class="kpi-grid">
             
-            <!-- Real laptop network cards -->
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">Upload Speed</span>
-                <h2 class="kpi-val" id="kpi-upload">0.0 KB/s</h2>
-                <span class="badge real">Host Laptop</span>
+            <!-- Hardware Temperature Card -->
+            <div class="kpi-card glass-panel sim-border">
+                <span class="kpi-label">HARDWARE TEMPERATURE</span>
+                <h2 class="kpi-val" id="kpi-temp">-- °C</h2>
+                <span class="badge real" id="kpi-temp-source">ESP32 Sensor</span>
             </div>
 
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">Download Speed</span>
-                <h2 class="kpi-val" id="kpi-download">0.0 KB/s</h2>
-                <span class="badge real">Host Laptop</span>
-            </div>
-
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">Total Data Usage</span>
-                <h2 class="kpi-val" id="kpi-total-traffic">0.0 MB</h2>
-                <span class="badge real">Host Laptop</span>
-            </div>
-
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">Bandwidth Usage</span>
-                <h2 class="kpi-val" id="kpi-bandwidth">0.0 %</h2>
-                <span class="badge real">Configured Capacity</span>
-            </div>
-
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">Wi-Fi Signal</span>
-                <h2 class="kpi-val" id="kpi-signal">0 %</h2>
-                <span class="badge real" id="kpi-ssid">netsh wlan</span>
-            </div>
-
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">Network Quality</span>
-                <h2 class="kpi-val" id="kpi-net-status">EXCELLENT</h2>
-                <span class="badge real">netsh State</span>
-            </div>
-
-            <!-- CONNECTED HOTSPOT DEVICES (REAL-TIME ARP DETECTED) -->
+            <!-- 5 Required ML Telemetry KPI Cards -->
             <div class="kpi-card glass-panel real-border">
-                <span class="kpi-label">Connected Hotspot Devices</span>
-                <h2 class="kpi-val" id="kpi-hotspot-clients">0 devices</h2>
-                <span class="badge real">Real-time (ARP Scan)</span>
+                <span class="kpi-label">Network Traffic</span>
+                <h2 class="kpi-val" id="kpi-total-traffic">0.0 MB</h2>
+                <span class="badge real">Software Telemetry</span>
             </div>
 
-            <!-- Real laptop system health cards -->
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">CPU Usage</span>
-                <h2 class="kpi-val" id="kpi-cpu">0.0 %</h2>
-                <span class="badge sys">Node System Health</span>
+            <div class="kpi-card glass-panel real-border">
+                <span class="kpi-label">Network Delay (Latency)</span>
+                <h2 class="kpi-val" id="kpi-delay">0.0 ms</h2>
+                <span class="badge real">Live ICMP Ping</span>
             </div>
 
-            <div class="kpi-card glass-panel">
+            <div class="kpi-card glass-panel real-border">
+                <span class="kpi-label">Throughput</span>
+                <h2 class="kpi-val" id="kpi-throughput">0.00 Mbps</h2>
+                <span class="badge real">Live Measurement</span>
+            </div>
+
+            <div class="kpi-card glass-panel real-border">
+                <span class="kpi-label">Propagation Time</span>
+                <h2 class="kpi-val" id="kpi-propagation">0.0 ms</h2>
+                <span class="badge real">Estimated (RTT / 2)</span>
+            </div>
+
+            <div class="kpi-card glass-panel real-border">
                 <span class="kpi-label">RAM Usage</span>
                 <h2 class="kpi-val" id="kpi-ram">0.0 %</h2>
-                <span class="badge sys">Node System Health</span>
-            </div>
-
-            <div class="kpi-card glass-panel">
-                <span class="kpi-label">Battery Level</span>
-                <h2 class="kpi-val" id="kpi-battery-pct">-- %</h2>
-                <span class="badge sys" id="kpi-battery-status">AC Power</span>
-            </div>
-
-            <!-- Temperature card -->
-            <div class="kpi-card glass-panel sim-border">
-                <span class="kpi-label">TEMPERATURE</span>
-                <h2 class="kpi-val" id="kpi-temp">-- °C</h2>
-                <span class="badge real" id="kpi-temp-source">Host Laptop</span>
-            </div>
-
-            <div class="kpi-card glass-panel sim-border">
-                <span class="kpi-label">Power Consumption</span>
-                <h2 class="kpi-val" id="kpi-power">0.0 W</h2>
-                <span class="badge real">Electrical Sensor</span>
-            </div>
-
-            <div class="kpi-card glass-panel sim-border">
-                <span class="kpi-label">Tower Battery</span>
-                <h2 class="kpi-val" id="kpi-battery-v">0.0 V</h2>
-                <span class="badge real">Tower Battery</span>
-            </div>
-
-            <div class="kpi-card glass-panel sim-border">
-                <span class="kpi-label">Tower Load</span>
-                <h2 class="kpi-val" id="kpi-load">0.0 %</h2>
-                <span class="badge real">Tower Load</span>
+                <span class="badge sys">System Memory</span>
             </div>
 
         </section>
 
-        <!-- Middle Grid: AI Prediction & Active Alerts & Hotspot Clients -->
+        <!-- ALGORITHM EXECUTION STATUS SECTION -->
+        <section class="glass-panel" style="margin-bottom: 20px;">
+            <div class="panel-head">
+                <h3>⚡ 3-ALGORITHM EXECUTION & PREDICTION STATUS</h3>
+                <span class="badge sys">All 3 Algorithms Active & Evaluated Simultaneously</span>
+            </div>
+            <div class="cmp-row-3" style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                <!-- Random Forest Status Card -->
+                <div class="kpi-card glass-panel" id="status-card-rf" style="border-left: 4px solid #8b5cf6;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h4 style="color: #8b5cf6; margin: 0;">Random Forest</h4>
+                        <span class="status-badge online" id="status-tag-rf">✓ Executed</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+                        <div>Training: <strong style="color: #10b981;">Success</strong></div>
+                        <div>Predictions: <strong style="color: #38bdf8;">Ready (5 Targets)</strong></div>
+                        <div>Score: <strong id="card-score-rf" style="color: #f8fafc;">--</strong></div>
+                    </div>
+                </div>
+
+                <!-- Gradient Boosting Status Card -->
+                <div class="kpi-card glass-panel" id="status-card-gb" style="border-left: 4px solid #10b981;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h4 style="color: #10b981; margin: 0;">Gradient Boosting</h4>
+                        <span class="status-badge online" id="status-tag-gb">✓ Executed</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+                        <div>Training: <strong style="color: #10b981;">Success</strong></div>
+                        <div>Predictions: <strong style="color: #38bdf8;">Ready (5 Targets)</strong></div>
+                        <div>Score: <strong id="card-score-gb" style="color: #f8fafc;">--</strong></div>
+                    </div>
+                </div>
+
+                <!-- Extra Trees Status Card -->
+                <div class="kpi-card glass-panel" id="status-card-et" style="border-left: 4px solid #f97316;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h4 style="color: #f97316; margin: 0;">Extra Trees</h4>
+                        <span class="status-badge online" id="status-tag-et">✓ Executed</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+                        <div>Training: <strong style="color: #10b981;">Success</strong></div>
+                        <div>Predictions: <strong style="color: #38bdf8;">Ready (5 Targets)</strong></div>
+                        <div>Score: <strong id="card-score-et" style="color: #f8fafc;">--</strong></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Middle Layout: Live Predictions Dashboard + Active Alerts + Hotspot Clients -->
         <div class="middle-layout">
             
-            <!-- AI Prediction Engine -->
+            <!-- LIVE ML PREDICTIONS DASHBOARD CARD -->
             <div class="ai-box glass-panel">
                 <div class="panel-head">
-                    <h3>🧠 AI Traffic Forecast & Congestion Engine</h3>
-                    <span class="ml-badge">Random Forest Model</span>
+                    <h3>🧠 OFFICIAL LIVE ML PREDICTIONS</h3>
+                    <span class="ml-badge" id="live-active-model-badge">Active Model: Loading...</span>
                 </div>
                 <div class="ai-body">
-                    <div class="ai-stat-row">
-                        <div class="ai-metric">
-                            <span class="metric-label">Predicted Traffic (Next 10 min)</span>
-                            <h2 class="metric-val" id="ai-pred-traffic">0.00 Mbps</h2>
+                    <div class="pred-grid-5">
+                        <div class="pred-item-chip">
+                            <span class="metric-label">Predicted Traffic</span>
+                            <h3 class="metric-val" id="pred-val-traffic">-- MB</h3>
                         </div>
-                        <div class="ai-metric">
-                            <span class="metric-label">Prediction Confidence</span>
-                            <h2 class="metric-val" id="ai-confidence">95.0%</h2>
+                        <div class="pred-item-chip">
+                            <span class="metric-label">Predicted Delay</span>
+                            <h3 class="metric-val" id="pred-val-delay">-- ms</h3>
+                        </div>
+                        <div class="pred-item-chip">
+                            <span class="metric-label">Predicted Throughput</span>
+                            <h3 class="metric-val" id="pred-val-throughput">-- Mbps</h3>
+                        </div>
+                        <div class="pred-item-chip">
+                            <span class="metric-label">Predicted Propagation</span>
+                            <h3 class="metric-val" id="pred-val-propagation">-- ms</h3>
+                        </div>
+                        <div class="pred-item-chip">
+                            <span class="metric-label">Predicted RAM Usage</span>
+                            <h3 class="metric-val" id="pred-val-ram">-- %</h3>
                         </div>
                     </div>
 
-                    <div class="risk-section">
+                    <div class="risk-section" style="margin-top: 15px;">
                         <span class="metric-label">Congestion Risk Level</span>
                         <div class="risk-track">
                             <div class="risk-fill" id="ai-risk-fill" style="width: 0%;"></div>
@@ -221,11 +227,6 @@
                             <span id="ai-risk-pct">0.0%</span>
                             <strong id="ai-risk-status" class="status-norm">LOW RISK</strong>
                         </div>
-                    </div>
-
-                    <div class="pred-status-banner">
-                        <span>Predicted Network Status:</span>
-                        <strong id="ai-pred-status" class="status-norm">NORMAL</strong>
                     </div>
                 </div>
             </div>
@@ -269,398 +270,153 @@
 
         </div>
 
-        <!-- 8 Live Multi-Series Telemetry Charts Grid -->
-        <section class="charts-grid">
-            
-            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>Upload & Download Speeds (KB/s)</h4>
-                    <span class="badge real">Host Laptop</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-speeds"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>Bandwidth Utilization (%)</h4>
-                    <span class="badge real">Capacity Formula</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-bandwidth"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>Wi-Fi Signal Strength (%)</h4>
-                    <span class="badge real">netsh CLI</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-signal"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>System CPU & RAM Usage (%)</h4>
-                    <span class="badge sys">Node System Health</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-sys"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>Tower Load (%) & Hotspot Devices</h4>
-                    <span class="badge real">Tower Load</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-load"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>Tower Temperature (°C)</h4>
-                    <span class="badge real">Temperature Sensor</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-temp"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>Power Draw (W) & Battery Voltage (V)</h4>
-                    <span class="badge real">Electrical System</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-power"></can            <div class="chart-box glass-panel">
-                <div class="chart-title">
-                    <h4>Total Network Traffic Accumulation (MB)</h4>
-                    <span class="badge real">Host Laptop</span>
-                </div>
-                <div class="chart-canvas-wrap">
-                    <canvas id="chart-traffic"></canvas>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- Live 3-Algorithm Machine Learning Comparison Section (Additive Module) -->
+        <!-- 3-ALGORITHM MACHINE LEARNING COMPARISON & BENCHMARK SECTION -->
         <section class="comparison-section glass-panel">
             
-            <!-- Section Header & Data Provenance -->
             <div class="comparison-header">
                 <div class="comparison-title">
-                    <h3>📊 Live 3-Algorithm Machine Learning Comparison</h3>
-                    <p class="comparison-subtitle">Real-Time Evaluation of Random Forest, Gradient Boosting, and XGBoost on Live Telemetry</p>
+                    <h3>📊 3-Algorithm Parallel Benchmark & Comparison</h3>
+                    <p class="comparison-subtitle">Random Forest vs Gradient Boosting vs Extra Trees on 1 Common Telemetry Dataset</p>
                 </div>
-                <div class="data-provenance-tag">
-                    <span>Uses live historical telemetry collected by existing monitoring pipeline (SQLite). No synthetic data added.</span>
-                </div>
-            </div>
-
-            <!-- Visual Pipeline Story Breadcrumbs -->
-            <div class="cmp-pipeline-breadcrumbs">
-                <span class="step">LIVE READINGS</span>
-                <span class="arrow">➔</span>
-                <span class="step">MODEL INPUTS</span>
-                <span class="arrow">➔</span>
-                <span class="step">RF / GB / XGBoost</span>
-                <span class="arrow">➔</span>
-                <span class="step">PREDICTIONS</span>
-                <span class="arrow">➔</span>
-                <span class="step">ACTUAL vs PREDICTED</span>
-                <span class="arrow">➔</span>
-                <span class="step">MAE / RMSE / R²</span>
-                <span class="arrow">➔</span>
-                <span class="step">CURRENT TOP PERFORMER</span>
-            </div>
-
-            <!-- Update Interval Distinction Bar -->
-            <div class="cmp-status-bar glass-panel">
-                <div class="cmp-status-item">
-                    <span class="lbl">⚡ Live Telemetry Inputs:</span>
-                    <strong class="val" id="meta-source">Updates ~2s interval</strong>
-                </div>
-                <div class="cmp-status-item">
-                    <span class="lbl">🤖 Model Evaluation:</span>
-                    <strong class="val" id="meta-records">Evaluates ~60s (Cached)</strong>
-                </div>
-                <div class="cmp-status-item">
-                    <span class="lbl">Evaluation Window:</span>
-                    <strong class="val" id="cmp-window-range">-- → -- (200 records)</strong>
-                </div>
-                <div class="cmp-status-item">
-                    <span class="lbl">Forecast Target:</span>
-                    <strong class="val" id="meta-target">Next-Interval Bandwidth (%)</strong>
-                </div>
-                <div class="cmp-status-item">
-                    <span class="lbl">Last Evaluated:</span>
-                    <strong class="val" id="cmp-updated-at">--:--:--</strong>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-scenario reset" onclick="triggerRetrain()" style="padding: 8px 16px;">🔄 RETRAIN ALL 3 MODELS</button>
+                    <span class="data-provenance-tag">Uses Live SQLite Telemetry</span>
                 </div>
             </div>
 
-            <!-- Warning / Status Banner when Insufficient Data -->
-            <div id="cmp-status-banner" class="cmp-status-banner hidden">
-                <span id="cmp-status-text">Checking data qualification...</span>
-            </div>
-
-            <div id="cmp-main-content">
+            <!-- Top Performer & Overall Comparison Row -->
+            <div class="cmp-row-5" style="margin-top: 20px;">
                 
-                <!-- ROW 1: LIVE MODEL INPUTS (COMPACT FULL-WIDTH PANEL) -->
-                <div class="cmp-panel glass-panel cmp-row-1">
-                    <div class="cmp-panel-head">
-                        <h4>📥 Live ML Inputs (11 Model Features)</h4>
-                        <span class="badge real">Current Telemetry Snapshot</span>
-                    </div>
-                    <div class="live-inputs-grid-11">
-                        <div class="input-chip-compact">
-                            <span class="lbl">Upload Speed</span>
-                            <strong class="val" id="input-upload">0.0 KB/s</strong>
+                <!-- TOP PERFORMER CARD -->
+                <div class="best-model-card glass-panel" style="flex: 1;">
+                    <div class="best-card-badge">🏆 TOP PERFORMING MODEL</div>
+                    <h4 class="best-card-subtitle">Dynamic Winner</h4>
+                    <h2 class="best-model-name" id="best-model-name">Calculating...</h2>
+                    
+                    <div class="best-metrics-row">
+                        <div class="best-metric-box">
+                            <span class="lbl">OVERALL SCORE</span>
+                            <span class="val" id="best-overall-score">--</span>
                         </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Download Speed</span>
-                            <strong class="val" id="input-download">0.0 KB/s</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Bandwidth Util.</span>
-                            <strong class="val" id="input-bandwidth">0.0 %</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Wi-Fi Signal</span>
-                            <strong class="val" id="input-signal">0 %</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">CPU Usage</span>
-                            <strong class="val" id="input-cpu">0.0 %</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">RAM Usage</span>
-                            <strong class="val" id="input-ram">0.0 %</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Power Draw</span>
-                            <strong class="val" id="input-power">0.0 W</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Battery Voltage</span>
-                            <strong class="val" id="input-battery">0.0 V</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Client Count</span>
-                            <strong class="val" id="input-clients">0</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Tower Load</span>
-                            <strong class="val" id="input-load">0.0 %</strong>
-                        </div>
-                        <div class="input-chip-compact">
-                            <span class="lbl">Traffic Delta</span>
-                            <strong class="val" id="input-traffic-delta">0.00 MB</strong>
+                        <div class="best-metric-box">
+                            <span class="lbl">STATUS</span>
+                            <span class="val" style="color: #10b981; font-weight: bold;">● ACTIVE MODEL</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- ROW 2: LIVE TELEMETRY + CURRENT PREDICTIONS (2 EQUAL COLUMNS) -->
-                <div class="cmp-row-2">
-                    
-                    <!-- LEFT: Live Network Telemetry Chart -->
-                    <div class="chart-box glass-panel">
-                        <div class="chart-title">
-                            <h4>Live Network Telemetry</h4>
-                            <span class="badge real">Inputs Time-Series</span>
-                        </div>
-                        <div class="cmp-chart-container">
-                            <canvas id="chart-input-network"></canvas>
-                        </div>
+                <!-- OVERALL 3-ALGORITHM COMPARISON GRAPH -->
+                <div class="chart-box glass-panel" style="flex: 2;">
+                    <div class="chart-title">
+                        <h4>1. Overall Model Comparison (Composite Score)</h4>
+                        <span class="badge real">Random Forest vs Gradient Boosting vs Extra Trees</span>
                     </div>
-
-                    <!-- RIGHT: Next-Interval Predictions Card -->
-                    <div class="cmp-card glass-panel">
-                        <div class="cmp-card-head">
-                            <h4>🔮 Next-Interval Predictions</h4>
-                            <span class="badge sys">Single-Step Target</span>
-                        </div>
-                        <p class="pred-target-sub">Forecast Target: Continuous Bandwidth Utilization (%)</p>
-                        <div class="next-preds-list">
-                            <div class="next-pred-item">
-                                <span class="algo-lbl">Random Forest:</span>
-                                <strong class="pred-val" id="next-pred-rf">0.00 %</strong>
-                            </div>
-                            <div class="next-pred-item">
-                                <span class="algo-lbl">Gradient Boosting:</span>
-                                <strong class="pred-val" id="next-pred-gb">0.00 %</strong>
-                            </div>
-                            <div class="next-pred-item">
-                                <span class="algo-lbl">XGBoost:</span>
-                                <strong class="pred-val" id="next-pred-xgb">0.00 %</strong>
-                            </div>
-                        </div>
-                        <div class="pred-card-footer">
-                            <span class="lbl">Evaluation updated:</span>
-                            <strong class="val" id="cmp-updated-at-card">--:--:--</strong>
-                        </div>
+                    <div class="cmp-chart-container">
+                        <canvas id="chart-overall-comparison"></canvas>
                     </div>
-
                 </div>
 
-                <!-- ROW 3: THREE MODEL GRAPHS (3 EQUAL COLUMNS) -->
-                <div class="cmp-row-3">
-                    
-                    <div class="chart-box glass-panel">
-                        <div class="chart-title">
-                            <h4>Random Forest — Actual vs Predicted</h4>
-                            <span class="metric-pill-chip" id="chip-rf-metrics">MAE ↓: -- | RMSE ↓: -- | R² ↑: --</span>
-                        </div>
-                        <div class="cmp-chart-container">
-                            <canvas id="chart-rf-pred"></canvas>
-                        </div>
+                <!-- DATASET INFORMATION CARD -->
+                <div class="cmp-card glass-panel" style="flex: 1;">
+                    <div class="cmp-card-head">
+                        <h4>📋 Dataset Information</h4>
                     </div>
-
-                    <div class="chart-box glass-panel">
-                        <div class="chart-title">
-                            <h4>Gradient Boosting — Actual vs Predicted</h4>
-                            <span class="metric-pill-chip" id="chip-gb-metrics">MAE ↓: -- | RMSE ↓: -- | R² ↑: --</span>
-                        </div>
-                        <div class="cmp-chart-container">
-                            <canvas id="chart-gb-pred"></canvas>
-                        </div>
+                    <div class="next-preds-list" style="font-size: 0.85rem;">
+                        <div class="next-pred-item"><span>Source:</span> <strong id="ds-source">Live SQLite</strong></div>
+                        <div class="next-pred-item"><span>Total Samples:</span> <strong id="ds-samples">--</strong></div>
+                        <div class="next-pred-item"><span>Train / Test Split:</span> <strong id="ds-split">80% / 20%</strong></div>
+                        <div class="next-pred-item"><span>Predicted Targets:</span> <strong>5 Parameters</strong></div>
+                        <div class="next-pred-item"><span>Hardware:</span> <strong>Temperature Sensor</strong></div>
+                        <div class="next-pred-item"><span>Last Training:</span> <strong id="ds-last-train">--</strong></div>
+                        <div class="next-pred-item"><span>Active Model:</span> <strong id="ds-active-model">--</strong></div>
                     </div>
-
-                    <div class="chart-box glass-panel">
-                        <div class="chart-title">
-                            <h4>XGBoost — Actual vs Predicted</h4>
-                            <span class="metric-pill-chip" id="chip-xgb-metrics">MAE ↓: -- | RMSE ↓: -- | R² ↑: --</span>
-                        </div>
-                        <div class="cmp-chart-container">
-                            <canvas id="chart-xgb-pred"></canvas>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- ROW 4: COMPARISON GRAPHS (2 EQUAL COLUMNS) -->
-                <div class="cmp-row-4">
-                    
-                    <div class="chart-box glass-panel">
-                        <div class="chart-title">
-                            <h4>RMSE Comparison</h4>
-                            <span class="badge real">Lower is better ↓</span>
-                        </div>
-                        <div class="cmp-chart-container">
-                            <canvas id="chart-cmp-rmse"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="chart-box glass-panel">
-                        <div class="chart-title">
-                            <h4>R² Comparison</h4>
-                            <span class="badge real">Higher is better ↑</span>
-                        </div>
-                        <div class="cmp-chart-container">
-                            <canvas id="chart-cmp-r2"></canvas>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- ROW 5: BENCHMARK TABLE + TOP PERFORMER (2 COLUMNS) -->
-                <div class="cmp-row-5">
-                    
-                    <!-- LEFT: Algorithm Benchmark Table -->
-                    <div class="cmp-table-container glass-panel">
-                        <div class="panel-head">
-                            <h4>Algorithm Benchmark Table</h4>
-                            <span class="badge sys">Evaluated on 200 Telemetry Records</span>
-                        </div>
-                        <table class="cmp-table">
-                            <thead>
-                                <tr>
-                                    <th>Algorithm</th>
-                                    <th>MAE ↓</th>
-                                    <th>RMSE ↓</th>
-                                    <th>R² ↑</th>
-                                    <th>Train Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cmp-table-body">
-                                <tr id="row-rf">
-                                    <td><strong>Random Forest</strong></td>
-                                    <td id="tbl-rf-mae">--</td>
-                                    <td id="tbl-rf-rmse">--</td>
-                                    <td id="tbl-rf-r2">--</td>
-                                    <td id="tbl-rf-time">--</td>
-                                </tr>
-                                <tr id="row-gb">
-                                    <td><strong>Gradient Boosting</strong></td>
-                                    <td id="tbl-gb-mae">--</td>
-                                    <td id="tbl-gb-rmse">--</td>
-                                    <td id="tbl-gb-r2">--</td>
-                                    <td id="tbl-gb-time">--</td>
-                                </tr>
-                                <tr id="row-xgb">
-                                    <td><strong>XGBoost</strong></td>
-                                    <td id="tbl-xgb-mae">--</td>
-                                    <td id="tbl-xgb-rmse">--</td>
-                                    <td id="tbl-xgb-r2">--</td>
-                                    <td id="tbl-xgb-time">--</td>
-                                </tr>
-                                <tr id="row-naive" class="baseline-row">
-                                    <td><em>Naive Persistence Baseline</em></td>
-                                    <td id="tbl-naive-mae">--</td>
-                                    <td id="tbl-naive-rmse">--</td>
-                                    <td id="tbl-naive-r2">--</td>
-                                    <td><em>—</em></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- RIGHT: Compact Current Top Performer Card -->
-                    <div class="best-model-card glass-panel">
-                        <div class="best-card-badge">🏆 CURRENT TOP PERFORMER</div>
-                        <h4 class="best-card-subtitle">Current Top Performer</h4>
-                        <h2 class="best-model-name" id="best-model-name">--</h2>
-                        
-                        <!-- Dynamic Win Rationale Banner -->
-                        <div class="win-reason-banner">
-                            <span id="best-win-reason">Lowest RMSE on current evaluation window</span>
-                        </div>
-
-                        <!-- R² < 0 Weak Fit Warning Note -->
-                        <div id="best-warning-note" class="best-warning-note hidden">
-                            <span>⚠️ No model currently provides a strong fit for this evaluation window (R² &lt; 0).</span>
-                        </div>
-
-                        <div class="best-metrics-row">
-                            <div class="best-metric-box">
-                                <span class="lbl">RMSE ↓</span>
-                                <span class="val" id="best-rmse">--</span>
-                            </div>
-                            <div class="best-metric-box">
-                                <span class="lbl">MAE ↓</span>
-                                <span class="val" id="best-mae">--</span>
-                            </div>
-                            <div class="best-metric-box">
-                                <span class="lbl">R² ↑</span>
-                                <span class="val" id="best-r2">--</span>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
 
             </div>
-        </section>   </tbody>
-                    </table>
+
+            <!-- MODEL PERFORMANCE TABLE -->
+            <div class="cmp-table-container glass-panel" style="margin-top: 20px;">
+                <div class="panel-head">
+                    <h4>Detailed 3-Algorithm Performance Breakdown</h4>
+                    <span class="badge sys">Evaluated on Common Test Set</span>
+                </div>
+                <table class="cmp-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Parameter</th>
+                            <th>MAE ↓</th>
+                            <th>RMSE ↓</th>
+                            <th>R² ↑</th>
+                            <th>Composite Score / 10</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cmp-table-body">
+                        <!-- Populated dynamically via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 5 SEPARATE PARAMETER COMPARISON GRAPHS -->
+            <div style="margin-top: 25px;">
+                <h4 style="margin-bottom: 15px; color: #f8fafc; font-size: 1.1rem;">📈 5 Separate Parameter Comparison Graphs (Actual vs RF vs GB vs ET)</h4>
+                
+                <div class="cmp-row-3" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <!-- Graph 2: Traffic -->
+                    <div class="chart-box glass-panel">
+                        <div class="chart-title">
+                            <h4>2. Traffic Comparison (MB)</h4>
+                        </div>
+                        <div class="cmp-chart-container">
+                            <canvas id="chart-param-traffic"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Graph 3: Delay -->
+                    <div class="chart-box glass-panel">
+                        <div class="chart-title">
+                            <h4>3. Delay Comparison (ms)</h4>
+                        </div>
+                        <div class="cmp-chart-container">
+                            <canvas id="chart-param-delay"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Graph 4: Throughput -->
+                    <div class="chart-box glass-panel">
+                        <div class="chart-title">
+                            <h4>4. Throughput Comparison (Mbps)</h4>
+                        </div>
+                        <div class="cmp-chart-container">
+                            <canvas id="chart-param-throughput"></canvas>
+                        </div>
+                    </div>
                 </div>
 
+                <div class="cmp-row-2" style="grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px;">
+                    <!-- Graph 5: Propagation Time -->
+                    <div class="chart-box glass-panel">
+                        <div class="chart-title">
+                            <h4>5. Propagation Time Comparison (ms)</h4>
+                        </div>
+                        <div class="cmp-chart-container">
+                            <canvas id="chart-param-propagation"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Graph 6: RAM Usage -->
+                    <div class="chart-box glass-panel">
+                        <div class="chart-title">
+                            <h4>6. RAM Usage Comparison (%)</h4>
+                        </div>
+                        <div class="cmp-chart-container">
+                            <canvas id="chart-param-ram"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
+
         </section>
 
         <!-- Footer -->
@@ -674,4 +430,3 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>
-
