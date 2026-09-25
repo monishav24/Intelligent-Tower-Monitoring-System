@@ -14,6 +14,9 @@ COLLECTION_INTERVAL_SECONDS = 2.0
 
 # ESP32 IoT Hardware Settings
 ESP32_TIMEOUT_SECONDS = 6.0
+ESP32_SERIAL_ENABLED = os.environ.get("ESP32_SERIAL_ENABLED", "true").lower() in ("true", "1", "yes")
+ESP32_SERIAL_PORT = os.environ.get("ESP32_SERIAL_PORT", "COM3")
+ESP32_SERIAL_BAUD_RATE = int(os.environ.get("ESP32_SERIAL_BAUD_RATE", "115200"))
 
 # Network Configuration
 DEFAULT_MAX_BANDWIDTH_MBPS = 100.0  # Configurable prototype capacity

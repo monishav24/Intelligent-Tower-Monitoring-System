@@ -23,6 +23,7 @@ from collector.hotspot_clients import get_connected_hotspot_clients
 from collector.internet_checker import check_internet_connectivity
 from collector.simulated_tower import SimulatedTowerCollector
 from collector.esp32_collector import ESP32Collector
+from collector.esp32_serial_collector import ESP32SerialCollector
 from ml.predictor import NetworkPredictor
 from services.anomaly_detection import AnomalyDetector
 from services.alert_service import AlertService
@@ -34,6 +35,7 @@ class MonitoringService:
         self.temp_collector = TemperatureCollector()
         self.sim_collector = SimulatedTowerCollector()
         self.esp32_collector = ESP32Collector()
+        self.esp32_serial_collector = ESP32SerialCollector(self.esp32_collector)
         self.predictor = NetworkPredictor()
         self.anomaly_detector = AnomalyDetector()
         self.alert_service = AlertService()
@@ -82,6 +84,13 @@ class MonitoringService:
             self.thread = threading.Thread(target=self._run_loop, daemon=True)
             self.thread.start()
             print("[Monitoring Service] Telemetry daemon thread started (2.0s interval).")
+            self.esp32_serial_collector.start()
+
+    def stop(self):
+        """Stop background collection and serial reader threads."""
+        self.running = False
+        if hasattr(self, 'esp32_serial_collector'):
+            self.esp32_serial_collector.stop()
 
     def _run_loop(self):
         # Warmup network collector
